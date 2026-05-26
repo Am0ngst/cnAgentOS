@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - 智能瞭望与智能问数系统</title>
+    <link rel="stylesheet" href="{{ static_url('bootstrap-5.3.8-dist/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ static_url('fontawesome-free-5.15.4-web/css/all.min.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: #f5f7fa;
+            overflow-x: hidden;
+        }
+
+        /* 顶部导航栏 */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header .logo {
+            display: flex;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .header .logo i {
+            margin-right: 12px;
+            font-size: 24px;
+        }
+
+        .header .user-info {
+            display: flex;
+            align-items: center;
+            color: white;
+        }
+
+        .header .user-info .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+
+        .header .user-info .username {
+            margin-right: 20px;
+            font-size: 14px;
+        }
+
+        .header .user-info .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 6px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .header .user-info .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* 左侧菜单 */
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: 220px;
+            height: calc(100vh - 60px);
+            background: #2c3e50;
+            z-index: 999;
+            overflow-y: auto;
+            transition: all 0.3s;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar-menu .menu-item {
+            position: relative;
+        }
+
+        .sidebar-menu .menu-item > a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #b8c5d6;
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu .menu-item > a:hover,
+        .sidebar-menu .menu-item.active > a {
+            background: rgba(255,255,255,0.05);
+            color: white;
+            border-left-color: #3498db;
+        }
+
+        .sidebar-menu .menu-item > a i {
+            width: 20px;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+
+        .sidebar-menu .menu-item > a .arrow {
+            margin-left: auto;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-menu .menu-item.open > a .arrow {
+            transform: rotate(90deg);
+        }
+
+        .sidebar-menu .submenu {
+            list-style: none;
+            padding: 0;
+            background: rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .sidebar-menu .menu-item.open .submenu {
+            display: block;
+        }
+
+        .sidebar-menu .submenu li a {
+            display: block;
+            padding: 12px 20px 12px 52px;
+            color: #95a5a6;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .sidebar-menu .submenu li a:hover,
+        .sidebar-menu .submenu li.active a {
+            color: white;
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* 主内容区 */
+        .main-content {
+            margin-left: 220px;
+            margin-top: 60px;
+            padding: 25px;
+            min-height: calc(100vh - 60px);
+        }
+
+        .content-header {
+            background: white;
+            padding: 20px 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .content-header h2 {
+            font-size: 20px;
+            color: #333;
+            margin: 0;
+        }
+
+        .content-header .breadcrumb {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .content-body {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block !important;
+            }
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        /* 卡片样式 */
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card .icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card .icon.blue { background: rgba(52, 152, 219, 0.1); color: #3498db; }
+        .stat-card .icon.green { background: rgba(46, 204, 113, 0.1); color: #2ecc71; }
+        .stat-card .icon.orange { background: rgba(230, 126, 34, 0.1); color: #e67e22; }
+        .stat-card .icon.purple { background: rgba(155, 89, 182, 0.1); color: #9b59b6; }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="header">
+        <div style="display: flex; align-items: center;">
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="logo">
+                <i class="fas fa-cube"></i>
+                <span>智能瞭望与智能问数系统</span>
+            </div>
+        </div>
+        <div class="user-info">
+            <div class="avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <span class="username">{{ username }}</span>
+            <form action="/admin/logout" method="post" style="margin: 0;">
+                {% module xsrf_form_html() %}
+                <button type="submit" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <!-- 左侧菜单 -->
+    <aside class="sidebar" id="sidebar">
+        <ul class="sidebar-menu" id="sidebarMenu">
+            <!-- 动态菜单将通过JavaScript加载 -->
+        </ul>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        {% block content %}{% end %}
+    </main>
+
+    <script src="{{ static_url('bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js') }}"></script>
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        function toggleSubmenu(element) {
+            element.parentElement.classList.toggle('open');
+        }
+
+        // 加载动态菜单
+        function loadMenu() {
+            fetch('/admin/api/menu')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        renderMenu(data.data);
+                    }
+                })
+                .catch(err => console.error('加载菜单失败:', err));
+        }
+
+        // 渲染菜单
+        function renderMenu(menuData) {
+            const menuContainer = document.getElementById('sidebarMenu');
+            if (!menuContainer || !menuData || menuData.length === 0) {
+                menuContainer.innerHTML = '<li class="menu-item"><a href="#"><span>暂无菜单</span></a></li>';
+                return;
+            }
+
+            let html = '';
+            menuData.forEach(item => {
+                const hasChildren = item.children && item.children.length > 0;
+                const currentUrl = window.location.pathname;
+                const isActive = currentUrl === item.url || currentUrl.startsWith(item.url + '/');
+                
+                if (hasChildren) {
+                    // 有子菜单
+                    const childActive = item.children.some(child => currentUrl === child.url);
+                    html += `
+                        <li class="menu-item ${childActive ? 'open' : ''}">
+                            <a href="javascript:;" onclick="toggleSubmenu(this)">
+                                <i class="${item.icon || 'fas fa-circle'}"></i>
+                                <span>${item.name}</span>
+                                <i class="fas fa-chevron-right arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                    `;
+                    item.children.forEach(child => {
+                        const childIsActive = currentUrl === child.url;
+                        html += `
+                            <li class="${childIsActive ? 'active' : ''}">
+                                <a href="${child.url}">
+                                    <i class="${child.icon || 'fas fa-circle'}"></i>
+                                    ${child.name}
+                                </a>
+                            </li>
+                        `;
+                    });
+                    html += '</ul></li>';
+                } else {
+                    // 无子菜单
+                    html += `
+                        <li class="menu-item ${isActive ? 'active' : ''}">
+                            <a href="${item.url || '#'}">
+                                <i class="${item.icon || 'fas fa-circle'}"></i>
+                                <span>${item.name}</span>
+                            </a>
+                        </li>
+                    `;
+                }
+            });
+            
+            menuContainer.innerHTML = html;
+        }
+
+        // 页面加载完成后加载菜单
+        document.addEventListener('DOMContentLoaded', loadMenu);
+    </script>
+    {% block scripts %}{% end %}
+</body>
+</html>

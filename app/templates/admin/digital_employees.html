@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-header">
+    <h2><i class="fas fa-robot me-2"></i>数字员工管理</h2>
+    <div class="breadcrumb"><i class="fas fa-home"></i> 首页 / 数字员工</div>
+</div>
+
+<div class="content-body">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <span class="text-muted">共有 <b>{{ total }}</b> 位数字员工</span>
+        </div>
+        <div>
+            <a href="/admin/digital-chat" class="btn btn-info me-2"><i class="fas fa-comments me-1"></i>使用数字员工</a>
+            <button class="btn btn-success" onclick="openCreateModal()"><i class="fas fa-plus me-1"></i>新增员工</button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th style="width:60px;">ID</th>
+                    <th style="width:130px;">名称</th>
+                    <th style="width:100px;">别名 @</th>
+                    <th style="width:70px;">类别</th>
+                    <th>关联服务</th>
+                    <th>说明</th>
+                    <th style="width:70px;">状态</th>
+                    <th style="width:100px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in data_list %}
+                <tr>
+                    <td>{{ emp['id'] }}</td>
+                    <td><strong>{{ emp['name'] }}</strong></td>
+                    <td><span class="badge bg-primary">@{{ emp['alias'] }}</span></td>
+                    <td>
+                        {% if emp['emp_type'] == 'AI' %}
+                        <span class="badge bg-warning text-dark"><i class="fas fa-brain me-1"></i>AI</span>
+                        {% else %}
+                        <span class="badge bg-info"><i class="fas fa-cog me-1"></i>普通</span>
+                        {% end %}
+                    </td>
+                    <td>
+                        {% if emp['emp_type'] == 'AI' %}
+                        <small>模型: {{ emp.get('model_name','未关联') }}</small>
+                        {% else %}
+                        <small>API: {{ emp.get('api_name','未关联') }}</small>
+                        {% end %}
+                    </td>
+                    <td><small class="text-muted">{{ emp.get('description','')[:50] }}</small></td>
+                    <td>
+                        {% if emp.get('status',1) %}
+                        <span class="badge bg-success">启用</span>
+                        {% else %}
+                        <span class="badge bg-secondary">禁用</span>
+                        {% end %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editEmp({{ emp['id'] }})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteEmp({{ emp['id'] }},'{{ emp['name'] }}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+                {% end %}
+                {% if not data_list %}
+                <tr><td colspan="8" class="text-center py-5 text-muted">暂无数字员工，请新增</td></tr>
+                {% end %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <small class="text-muted">共 {{ total }} 条记录</small>
+        <nav><ul class="pagination mb-0">
+            <li class="page-item {% if page<=1 %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page-1 }}">上一页</a>
+            </li>
+            {% for p in range(1, total_pages+1) %}
+            <li class="page-item {% if p==page %}active{% end %}">
+                <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+            </li>
+            {% end %}
+            <li class="page-item {% if page>=total_pages %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page+1 }}">下一页</a>
+            </li>
+        </ul></nav>
+    </div>
+</div>
+
+<div class="modal fade" id="empFormModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="empFormTitle"><i class="fas fa-robot me-2"></i>新增数字员工</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="empForm">
+                    <input type="hidden" id="efId" name="id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">名称 <span class="text-danger">*</span></label>
+                            <input class="form-control" id="efName" name="name" required placeholder="如：川小农">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">别名 @ <span class="text-danger">*</span></label>
+                            <input class="form-control" id="efAlias" name="alias" required placeholder="用户用@别名调用">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">类别 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="efType" name="emp_type" onchange="toggleType()">
+                                <option value="AI">AI (大模型)</option>
+                                <option value="普通">普通 (API)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3" id="modelGroup">
+                            <label class="form-label">关联模型</label>
+                            <select class="form-select" id="efModelId" name="model_id">
+                                <option value="">不关联</option>
+                                {% for m in models %}
+                                <option value="{{ m['id'] }}">{{ m['name'] }}</option>
+                                {% end %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3" id="apiGroup" style="display:none;">
+                            <label class="form-label">关联API</label>
+                            <select class="form-select" id="efApiId" name="api_id">
+                                <option value="">不关联</option>
+                                {% for a in apis %}
+                                <option value="{{ a['id'] }}">{{ a['name'] }}</option>
+                                {% end %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">排序</label>
+                            <input type="number" class="form-control" id="efSort" name="sort_order" value="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">状态</label>
+                            <select class="form-select" id="efStatus" name="status">
+                                <option value="1">启用</option><option value="0">禁用</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="promptGroup">
+                        <label class="form-label">系统提示词 (System Prompt)</label>
+                        <textarea class="form-control" id="efPrompt" name="system_prompt" rows="4" placeholder="定义AI助手的行为和角色..."></textarea>
+                    </div>
+                    <div class="row" id="paramConfigGroup" style="display:none;">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">参数键</label>
+                            <input class="form-control" id="efParamKey" name="params_key" placeholder="如：city">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">参数标签</label>
+                            <input class="form-control" id="efParamLabel" name="params_label" placeholder="如：城市名称">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">占位提示</label>
+                            <input class="form-control" id="efParamPlaceholder" name="params_placeholder" placeholder="请输入城市名称">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">说明</label>
+                        <textarea class="form-control" id="efDesc" name="description" rows="2" placeholder="数字员工功能说明..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button class="btn btn-primary" onclick="saveEmp()"><i class="fas fa-save me-1"></i>保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+var _xsrf='';
+var allData={% raw data_json %};
+
+document.addEventListener('DOMContentLoaded',()=>{
+    var m=document.cookie.match('_xsrf=([^;]*)');
+    if(m)_xsrf=m[1];
+    new bootstrap.Modal(document.getElementById('empFormModal'));
+    toggleType();
+});
+
+function toggleType(){
+    var t=document.getElementById('efType').value;
+    var isAI=t==='AI';
+    document.getElementById('modelGroup').style.display=isAI?'':'none';
+    document.getElementById('apiGroup').style.display=isAI?'none':'';
+    document.getElementById('promptGroup').style.display=isAI?'':'none';
+    document.getElementById('paramConfigGroup').style.display=isAI?'none':'';
+}
+
+function openCreateModal(){
+    document.getElementById('empFormTitle').innerHTML='<i class="fas fa-robot me-2"></i>新增数字员工';
+    document.getElementById('empForm').reset();
+    document.getElementById('efId').value='';
+    document.getElementById('efType').value='AI';
+    toggleType();
+    new bootstrap.Modal(document.getElementById('empFormModal')).show();
+}
+
+function editEmp(id){
+    var a=allData.find(x=>x.id==id);
+    if(!a)return;
+    document.getElementById('empFormTitle').innerHTML='<i class="fas fa-edit me-2"></i>编辑数字员工';
+    document.getElementById('efId').value=a.id;
+    document.getElementById('efName').value=a.name;
+    document.getElementById('efAlias').value=a.alias;
+    document.getElementById('efType').value=a.emp_type;
+    document.getElementById('efModelId').value=a.model_id||'';
+    document.getElementById('efApiId').value=a.api_id||'';
+    document.getElementById('efPrompt').value=a.system_prompt||'';
+    document.getElementById('efDesc').value=a.description||'';
+    document.getElementById('efSort').value=a.sort_order||0;
+    document.getElementById('efStatus').value=a.status||1;
+    if(a.params_config&&typeof a.params_config==='object'){
+        document.getElementById('efParamKey').value=a.params_config.param_key||'';
+        document.getElementById('efParamLabel').value=a.params_config.param_label||'';
+        document.getElementById('efParamPlaceholder').value=a.params_config.placeholder||'';
+    }else{
+        document.getElementById('efParamKey').value='';
+        document.getElementById('efParamLabel').value='';
+        document.getElementById('efParamPlaceholder').value='';
+    }
+    toggleType();
+    new bootstrap.Modal(document.getElementById('empFormModal')).show();
+}
+
+function saveEmp(){
+    var id=document.getElementById('efId').value;
+    var f=new FormData(document.getElementById('empForm'));
+    f.append('_xsrf',_xsrf);
+    var url=id?'/admin/digital-employees/update':'/admin/digital-employees/create';
+    fetch(url,{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);
+        if(d.success)location.reload();
+    });
+}
+
+function deleteEmp(id,name){
+    if(!confirm('确认删除 '+name+' ?'))return;
+    var f=new FormData();f.append('id',id);f.append('_xsrf',_xsrf);
+    fetch('/admin/digital-employees/delete',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);if(d.success)location.reload();
+    });
+}
+</script>
+{% end %}

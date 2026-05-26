@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-header">
+    <h2><i class="fas fa-brain me-2"></i>模型引擎</h2>
+    <div class="breadcrumb">
+        <i class="fas fa-home"></i> 首页 / 模型引擎
+    </div>
+</div>
+
+<style>
+    .model-card {
+        background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        border-radius: 20px;
+        padding: 30px 25px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255,255,255,0.08);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        cursor: default;
+    }
+    .model-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(100,200,255,0.08) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
+    }
+    .model-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(100,200,255,0.1);
+        border-color: rgba(100,200,255,0.3);
+    }
+    .model-card .card-header-area {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        position: relative;
+        z-index: 1;
+    }
+    .model-card .model-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 26px;
+        flex-shrink: 0;
+    }
+    .model-card .model-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: white;
+        margin: 0;
+    }
+    .model-card .model-code {
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
+        margin-top: 4px;
+    }
+    .model-card .model-info {
+        position: relative;
+        z-index: 1;
+    }
+    .model-card .info-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        color: rgba(255,255,255,0.7);
+        font-size: 13px;
+    }
+    .model-card .info-item i {
+        width: 20px;
+        margin-right: 8px;
+        font-size: 12px;
+        color: rgba(100,200,255,0.8);
+    }
+    .model-card .model-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        position: relative;
+        z-index: 1;
+    }
+    .model-card .stat-item {
+        text-align: center;
+    }
+    .model-card .stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: white;
+    }
+    .model-card .stat-label {
+        font-size: 11px;
+        color: rgba(255,255,255,0.4);
+        margin-top: 2px;
+    }
+    .model-card .card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 18px;
+        position: relative;
+        z-index: 1;
+    }
+    .model-card .card-actions .btn {
+        flex: 1;
+        font-size: 12px;
+        padding: 8px 10px;
+        border-radius: 10px;
+    }
+    .btn-glass {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s;
+    }
+    .btn-glass:hover {
+        background: rgba(255,255,255,0.2);
+        border-color: rgba(255,255,255,0.4);
+        color: white;
+    }
+    .btn-neon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+    }
+    .btn-neon:hover {
+        box-shadow: 0 6px 25px rgba(102,126,234,0.5);
+        transform: translateY(-2px);
+        color: white;
+    }
+    .badge-default {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        color: white;
+        font-size: 10px;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+    .badge-disabled {
+        background: rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.5);
+        font-size: 10px;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .token-chart-bar {
+        height: 20px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 10px;
+        transition: width 1s ease;
+    }
+    .chat-messages {
+        height: 350px;
+        overflow-y: auto;
+        padding: 15px;
+        background: rgba(0,0,0,0.3);
+        border-radius: 15px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .chat-messages .msg {
+        margin-bottom: 12px;
+        max-width: 85%;
+    }
+    .chat-messages .msg.user {
+        margin-left: auto;
+    }
+    .chat-messages .msg.user .msg-content {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 10px 16px;
+        border-radius: 18px 18px 4px 18px;
+    }
+    .chat-messages .msg.assistant .msg-content {
+        background: rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.9);
+        padding: 10px 16px;
+        border-radius: 18px 18px 18px 4px;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    .sse-indicator {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: #00ff88;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+
+<div class="content-body" style="background: #0d1117; border: 1px solid rgba(255,255,255,0.05);">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <button class="btn btn-neon" onclick="openAddModal()">
+                <i class="fas fa-plus me-2"></i>新增模型
+            </button>
+        </div>
+    </div>
+
+    <div class="row" id="modelGrid">
+        {% for model in models %}
+        <div class="col-md-4 mb-4">
+            <div class="model-card">
+                <div class="card-header-area">
+                    <div class="model-icon" style="background: linear-gradient(135deg, {% if model['is_default'] %}#667eea,#764ba2{% else %}#11998e,#38ef7d{% end %});">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <h5 class="model-name">{{ model['name'] }}
+                            {% if model['is_default'] %}<span class="badge-default ms-2">默认</span>{% end %}
+                            {% if model['status'] == 0 %}<span class="badge-disabled ms-2">已禁用</span>{% end %}
+                        </h5>
+                        <div class="model-code">{{ model['code'] }}</div>
+                    </div>
+                </div>
+                <div class="model-info">
+                    <div class="info-item"><i class="fas fa-globe"></i>{{ model['model_name'] }}</div>
+                    <div class="info-item"><i class="fas fa-link"></i>{{ model['base_url'] }}</div>
+                    <div class="info-item"><i class="fas fa-info-circle"></i>{{ model['description'] or '暂无描述' }}</div>
+                </div>
+                <div class="model-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ model['total_calls'] }}</div>
+                        <div class="stat-label">调用次数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ model['total_tokens'] }}</div>
+                        <div class="stat-label">Token用量</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ model['create_at'][:10] }}</div>
+                        <div class="stat-label">创建日期</div>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn btn-glass" onclick="openChatModal({{ model['id'] }}, '{{ model['name'] }}')">
+                        <i class="fas fa-comment me-1"></i>对话测试
+                    </button>
+                    <button class="btn btn-glass" onclick="openTokenModal({{ model['id'] }}, '{{ model['name'] }}')">
+                        <i class="fas fa-chart-bar me-1"></i>Token
+                    </button>
+                </div>
+                <div class="card-actions" style="margin-top: 8px;">
+                    <button class="btn btn-glass btn-sm" onclick="editModel({{ model['id'] }}, '{{ model['name'] }}', '{{ model['code'] }}', '{{ model['api_key'] }}', '{{ model['base_url'] }}', '{{ model['model_name'] }}', '{{ model['description'] or '' }}', {{ model['is_default'] }}, {{ model['status'] }})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-glass btn-sm" onclick="setDefault({{ model['id'] }}, '{{ model['name'] }}')">
+                        <i class="fas fa-star"></i>
+                    </button>
+                    <button class="btn btn-glass btn-sm" onclick="deleteModel({{ model['id'] }}, '{{ model['name'] }}')" style="color: #ff6b6b;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% end %}
+    </div>
+
+    <nav class="mt-4"><ul class="pagination justify-content-center">
+        <li class="page-item {% if page<=1 %}disabled{% end %}"><a class="page-link" href="?page={{page-1}}">上一页</a></li>
+        {% for p in range(1,total_pages+1) %}<li class="page-item {% if p==page %}active{% end %}"><a class="page-link" href="?page={{p}}">{{p}}</a></li>{% end %}
+        <li class="page-item {% if page>=total_pages %}disabled{% end %}"><a class="page-link" href="?page={{page+1}}">下一页</a></li>
+    </ul></nav>
+</div>
+
+<!-- 新增/编辑模型模态框 -->
+<div class="modal fade" id="modelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary"><h5 class="modal-title" id="modalTitle">新增模型</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="modelForm">
+                    {% module xsrf_form_html() %}
+                    <input type="hidden" id="modelId" name="id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3"><label class="form-label">模型名称</label><input class="form-control bg-dark text-white border-secondary" id="mName" name="name" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">模型编码</label><input class="form-control bg-dark text-white border-secondary" id="mCode" name="code" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">API Key</label><input class="form-control bg-dark text-white border-secondary" id="mApiKey" name="api_key" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Base URL</label><input class="form-control bg-dark text-white border-secondary" id="mBaseUrl" name="base_url" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Model Name</label><input class="form-control bg-dark text-white border-secondary" id="mModelName" name="model_name" required placeholder="claude-sonnet-4-5-20250929"></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">描述</label><input class="form-control bg-dark text-white border-secondary" id="mDesc" name="description"></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">设为默认</label><select class="form-select bg-dark text-white border-secondary" id="mIsDefault" name="is_default"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">状态</label><select class="form-select bg-dark text-white border-secondary" id="mStatus" name="status"><option value="1">启用</option><option value="0">禁用</option></select></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button class="btn btn-neon" onclick="saveModel()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 对话测试模态框 -->
+<div class="modal fade" id="chatModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-comments me-2"></i>对话测试 - <span id="chatModelName"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="chatModelId">
+                <div class="chat-messages" id="chatMessages">
+                    <p class="text-muted text-center">开始对话测试...</p>
+                </div>
+                <div class="d-flex mt-3 gap-2">
+                    <input class="form-control bg-dark text-white border-secondary flex-grow-1" id="chatInput" placeholder="输入消息...">
+                    <button class="btn btn-neon" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+                    <button class="btn btn-glass" onclick="sendChatSSE()"><i class="fas fa-stream me-1"></i>SSE流式 <span class="sse-indicator" style="display:none" id="sseDot"></span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Token统计模态框 -->
+<div class="modal fade" id="tokenModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-chart-bar me-2"></i>Token统计 - <span id="tokenModelName"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="tokenModelId">
+                <div id="tokenChartArea"><p class="text-center text-muted">加载中...</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认 -->
+<div class="modal fade" id="deleteModal" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content bg-dark text-white border-secondary"><div class="modal-header border-secondary"><h5 class="modal-title">确认删除</h5></div><div class="modal-body"><p id="deleteMessage"></p></div><div class="modal-footer border-secondary"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-danger" id="confirmDeleteBtn">删除</button></div></div></div></div>
+{% end %}
+
+{% block scripts %}
+<script>
+let deleteModelId=null, modelModal, chatModal, tokenModal, deleteModal;
+let _xsrf='';
+document.addEventListener('DOMContentLoaded',()=>{
+    modelModal=new bootstrap.Modal(document.getElementById('modelModal'));
+    chatModal=new bootstrap.Modal(document.getElementById('chatModal'));
+    tokenModal=new bootstrap.Modal(document.getElementById('tokenModal'));
+    deleteModal=new bootstrap.Modal(document.getElementById('deleteModal'));
+    var m=document.cookie.match('_xsrf=([^;]*)');
+    if(m)_xsrf=m[1];
+});
+
+function openAddModal(){
+    document.getElementById('modalTitle').textContent='新增模型';
+    document.getElementById('modelForm').reset();
+    document.getElementById('modelId').value='';
+    modelModal.show();
+}
+function editModel(id,name,code,apiKey,baseUrl,modelName,desc,isDefault,status){
+    document.getElementById('modalTitle').textContent='编辑模型';
+    document.getElementById('modelId').value=id;
+    document.getElementById('mName').value=name;
+    document.getElementById('mCode').value=code;
+    document.getElementById('mApiKey').value=apiKey;
+    document.getElementById('mBaseUrl').value=baseUrl;
+    document.getElementById('mModelName').value=modelName;
+    document.getElementById('mDesc').value=desc;
+    document.getElementById('mIsDefault').value=isDefault;
+    document.getElementById('mStatus').value=status;
+    modelModal.show();
+}
+function saveModel(){
+    const f=new FormData(document.getElementById('modelForm'));
+    const id=document.getElementById('modelId').value;
+    const url=id?'/admin/models/update':'/admin/models/create';
+    fetch(url,{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);if(d.success)location.reload();
+    });
+}
+function setDefault(id,name){
+    if(!confirm(`将 "${name}" 设为默认模型？`))return;
+    const f=new FormData();f.append('id',id);f.append('_xsrf',_xsrf);
+    fetch('/admin/models/set_default',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);if(d.success)location.reload();
+    });
+}
+function deleteModel(id,name){
+    deleteModelId=id;
+    document.getElementById('deleteMessage').textContent=`确定删除 "${name}"？`;
+    deleteModal.show();
+}
+document.getElementById('confirmDeleteBtn').addEventListener('click',()=>{
+    if(!deleteModelId)return;
+    const f=new FormData();f.append('id',deleteModelId);f.append('_xsrf',_xsrf);
+    fetch('/admin/models/delete',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);if(d.success)location.reload();
+    });deleteModal.hide();
+});
+
+function openChatModal(id,name){
+    document.getElementById('chatModelId').value=id;
+    document.getElementById('chatModelName').textContent=name;
+    document.getElementById('chatMessages').innerHTML='<p class="text-muted text-center">开始对话测试...</p>';
+    chatModal.show();
+}
+function sendChat(){
+    const mid=document.getElementById('chatModelId').value;
+    const msg=document.getElementById('chatInput').value.trim();
+    if(!msg)return;
+    appendChatMsg('user',msg);
+    document.getElementById('chatInput').value='';
+    const f=new FormData();f.append('model_id',mid);f.append('message',msg);f.append('_xsrf',_xsrf);
+    fetch('/admin/models/chat',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){appendChatMsg('assistant',d.content);}
+        else{appendChatMsg('assistant','错误: '+d.message);}
+    }).catch(e=>{appendChatMsg('assistant','网络错误: '+e.message);});
+}
+function sendChatSSE(){
+    const mid=document.getElementById('chatModelId').value;
+    const msg=document.getElementById('chatInput').value.trim();
+    if(!msg)return;
+    appendChatMsg('user',msg);
+    document.getElementById('chatInput').value='';
+    document.getElementById('sseDot').style.display='inline-block';
+    const msgDiv=appendChatMsg('assistant','');
+    const evt=new EventSource(`/admin/models/chat_sse?_xsrf=${_xsrf}&model_id=${mid}&message=${encodeURIComponent(msg)}`);
+    evt.onmessage=e=>{
+        if(e.data==='[DONE]'){evt.close();document.getElementById('sseDot').style.display='none';return;}
+        try{
+            const d=JSON.parse(e.data);
+            if(d.error){msgDiv.textContent+='\\n[错误: '+d.error+']';evt.close();document.getElementById('sseDot').style.display='none';}
+            else{msgDiv.textContent+=d.content;}
+        }catch(ex){}
+    };
+    evt.onerror=()=>{evt.close();document.getElementById('sseDot').style.display='none';};
+}
+function appendChatMsg(role,content){
+    const cnt=document.getElementById('chatMessages');
+    if(cnt.querySelector('.text-muted'))cnt.innerHTML='';
+    const div=document.createElement('div');
+    div.className='msg '+role;
+    const inner=document.createElement('div');
+    inner.className='msg-content';
+    inner.textContent=content||'...';
+    div.appendChild(inner);
+    cnt.appendChild(div);
+    cnt.scrollTop=cnt.scrollHeight;
+    return inner;
+}
+
+function openTokenModal(id,name){
+    document.getElementById('tokenModelId').value=id;
+    document.getElementById('tokenModelName').textContent=name;
+    document.getElementById('tokenChartArea').innerHTML='<p class="text-center text-muted">加载中...</p>';
+    tokenModal.show();
+    fetch(`/admin/models/token_stats?id=${id}`).then(r=>r.json()).then(d=>{
+        if(d.success&&d.data.length>0){
+            let html='<table class="table table-dark table-striped"><thead><tr><th>日期</th><th>调用次数</th><th>输入Token</th><th>输出Token</th><th>总计</th></tr></thead><tbody>';
+            d.data.forEach(s=>{html+=`<tr><td>${s.day}</td><td>${s.calls}</td><td>${s.prompt_tokens}</td><td>${s.completion_tokens}</td><td><strong>${s.total_tokens}</strong></td></tr>`;});
+            html+='</tbody></table>';
+            const maxT=Math.max(...d.data.map(s=>s.total_tokens));
+            html+='<h6 class="mt-3">用量趋势</h6>';
+            d.data.slice().reverse().forEach(s=>{
+                const pct=maxT>0?(s.total_tokens/maxT*100):0;
+                html+=`<div class="d-flex align-items-center mb-2"><small class="text-white-50" style="width:80px;">${s.day}</small><div class="flex-grow-1 ms-2" style="background:rgba(255,255,255,0.05);border-radius:10px;"><div class="token-chart-bar" style="width:${pct}%;"></div></div><small class="ms-2 text-white-50">${s.total_tokens}</small></div>`;
+            });
+            document.getElementById('tokenChartArea').innerHTML=html;
+        }else{
+            document.getElementById('tokenChartArea').innerHTML='<p class="text-center text-muted">暂无统计数据</p>';
+        }
+    });
+}
+</script>
+{% end %}

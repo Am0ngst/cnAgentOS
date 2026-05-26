@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-header">
+    <h2><i class="fas fa-users me-2"></i>用户管理</h2>
+    <div class="breadcrumb">
+        <i class="fas fa-home"></i> 首页 / 用户管理
+    </div>
+</div>
+
+<div class="content-body">
+    <!-- 操作栏 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <button class="btn btn-primary" onclick="openAddModal()">
+                <i class="fas fa-plus me-2"></i>新增用户
+            </button>
+            <button class="btn btn-danger ms-2" onclick="batchDelete()">
+                <i class="fas fa-trash me-2"></i>批量删除
+            </button>
+        </div>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>admin为系统默认用户，不能修改和删除，只能修改密码
+        </div>
+    </div>
+
+    <!-- 用户表格 -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th width="50">
+                        <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()">
+                    </th>
+                    <th>ID</th>
+                    <th>用户名</th>
+                    <th>角色</th>
+                    <th>创建时间</th>
+                    <th width="150">操作</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <input type="checkbox" class="form-check-input user-checkbox" 
+                               value="{{ user['id'] }}" 
+                               {% if user['username'] == 'admin' %}disabled{% end %}>
+                    </td>
+                    <td>{{ user['id'] }}</td>
+                    <td>
+                        {{ user['username'] }}
+                        {% if user['username'] == 'admin' %}
+                        <span class="badge bg-danger ms-1">系统</span>
+                        {% end %}
+                    </td>
+                    <td>
+                        {% if user['role_name'] %}
+                        <span class="badge {% if user['role_is_system'] %}bg-danger{% else %}bg-info{% end %}">
+                            {{ user['role_name'] }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% end %}
+                    </td>
+                    <td>{{ user['create_at'] }}</td>
+                    <td>
+                        {% if user['username'] == 'admin' %}
+                        <!-- admin用户只能修改密码 -->
+                        <button class="btn btn-sm btn-warning" onclick="editAdminPassword({{ user['id'] }}, '{{ user['username'] }}')">
+                            <i class="fas fa-key"></i> 改密
+                        </button>
+                        {% else %}
+                        <button class="btn btn-sm btn-info" onclick="editUser({{ user['id'] }}, '{{ user['username'] }}', {{ user['role_id'] or 'null' }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser({{ user['id'] }}, '{{ user['username'] }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        {% end %}
+                    </td>
+                </tr>
+                {% end %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页 -->
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center" id="pagination">
+            <li class="page-item {% if page <= 1 %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page - 1 }}">上一页</a>
+            </li>
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {% if p == page %}active{% end %}">
+                <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+            </li>
+            {% end %}
+            <li class="page-item {% if page >= total_pages %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page + 1 }}">下一页</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<!-- 新增/编辑用户模态框 -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">新增用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    {% module xsrf_form_html() %}
+                    <input type="hidden" id="userId" name="id">
+                    <div class="mb-3" id="usernameField">
+                        <label class="form-label">用户名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">密码 <span class="text-danger" id="passwordRequired">*</span></label>
+                        <input type="password" class="form-control" id="password" name="password">
+                        <small class="text-muted" id="passwordHint">编辑时留空表示不修改密码</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">角色</label>
+                        <select class="form-select" id="roleId" name="role_id">
+                            <option value="">请选择角色</option>
+                            {% for role in roles %}
+                            <option value="{{ role['id'] }}">{{ role['name'] }}</option>
+                            {% end %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveUser()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteMessage">确定要删除该用户吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+    let deleteUserId = null;
+    let userModal = null;
+    let deleteModal = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        userModal = new bootstrap.Modal(document.getElementById('userModal'));
+        deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    });
+
+    function openAddModal() {
+        document.getElementById('modalTitle').textContent = '新增用户';
+        document.getElementById('userForm').reset();
+        document.getElementById('userId').value = '';
+        document.getElementById('usernameField').style.display = 'block';
+        document.getElementById('username').required = true;
+        document.getElementById('password').required = true;
+        document.getElementById('passwordRequired').style.display = 'inline';
+        document.getElementById('passwordHint').textContent = '';
+        userModal.show();
+    }
+
+    function editUser(id, username, roleId) {
+        document.getElementById('modalTitle').textContent = '编辑用户';
+        document.getElementById('userId').value = id;
+        document.getElementById('username').value = username;
+        document.getElementById('roleId').value = roleId || '';
+        document.getElementById('password').value = '';
+        document.getElementById('password').required = false;
+        document.getElementById('passwordRequired').style.display = 'none';
+        document.getElementById('passwordHint').textContent = '留空表示不修改密码';
+        document.getElementById('usernameField').style.display = 'none';
+        document.getElementById('username').required = false;
+        userModal.show();
+    }
+
+    function editAdminPassword(id, username) {
+        document.getElementById('modalTitle').textContent = '修改admin密码';
+        document.getElementById('userId').value = id;
+        document.getElementById('username').value = username;
+        document.getElementById('roleId').value = '1'; // 超级管理员角色
+        document.getElementById('password').value = '';
+        document.getElementById('password').required = true;
+        document.getElementById('passwordRequired').style.display = 'inline';
+        document.getElementById('passwordHint').textContent = '请输入新密码';
+        document.getElementById('usernameField').style.display = 'none';
+        document.getElementById('username').required = false;
+        userModal.show();
+    }
+
+    function saveUser() {
+        const form = document.getElementById('userForm');
+        const formData = new FormData(form);
+        const userId = document.getElementById('userId').value;
+        const username = document.getElementById('username').value;
+        
+        // 如果是admin用户，只提交密码
+        if (username === 'admin') {
+            const password = document.getElementById('password').value;
+            if (!password) {
+                alert('请输入新密码');
+                return;
+            }
+            // 只保留id和password
+            const adminFormData = new FormData();
+            adminFormData.append('id', userId);
+            adminFormData.append('password', password);
+            adminFormData.append('_xsrf', formData.get('_xsrf'));
+            formData = adminFormData;
+        }
+        
+        const url = userId ? '/admin/users/update' : '/admin/users/create';
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message || '操作失败');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('操作失败');
+        });
+    }
+
+    function deleteUser(id, username) {
+        deleteUserId = id;
+        document.getElementById('deleteMessage').textContent = `确定要删除用户 "${username}" 吗？`;
+        deleteModal.show();
+    }
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (!deleteUserId) return;
+        
+        const formData = new FormData();
+        formData.append('id', deleteUserId);
+        
+        fetch('/admin/users/delete', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message || '删除失败');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('删除失败');
+        });
+        
+        deleteModal.hide();
+    });
+
+    function batchDelete() {
+        const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+        
+        if (ids.length === 0) {
+            alert('请选择要删除的用户');
+            return;
+        }
+        
+        if (!confirm(`确定要删除选中的 ${ids.length} 个用户吗？\n注意：admin用户不会被删除。`)) {
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('ids', ids.join(','));
+        
+        fetch('/admin/users/batch_delete', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message || '批量删除失败');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('批量删除失败');
+        });
+    }
+
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.user-checkbox:not([disabled])');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    }
+
+    function searchUsers() {
+        const keyword = document.getElementById('searchInput').value;
+        if (keyword) {
+            window.location.href = `/admin/users?search=${encodeURIComponent(keyword)}`;
+        } else {
+            window.location.href = '/admin/users';
+        }
+    }
+</script>
+{% end %}

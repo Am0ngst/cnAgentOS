@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .deep-status-0{color:#999;}.deep-status-1{color:#f59e0b;}.deep-status-2{color:#22c55e;}.deep-status-3{color:#ef4444;}
+    .detail-card{border:1px solid #e0e0e0;border-radius:12px;padding:20px;margin-bottom:15px;background:#fafafa;}
+    .detail-card h6{font-size:14px;color:#666;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+    .log-item{padding:8px 12px;border-left:3px solid #e0e0e0;margin-bottom:6px;font-size:12px;}
+    .log-item.success{border-left-color:#22c55e;}.log-item.error{border-left-color:#ef4444;}.log-item.warning{border-left-color:#f59e0b;}
+    .log-item.info{border-left-color:#3b82f6;}
+    .progress-modal .progress{height:10px;border-radius:5px;}
+</style>
+
+<div class="content-header">
+    <h2><i class="fas fa-database me-2"></i>数据仓库</h2>
+    <div class="breadcrumb"><i class="fas fa-home"></i> 首页 / 数据仓库</div>
+</div>
+
+<div class="content-body">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <form class="d-flex gap-2" method="get">
+            <select class="form-select" name="source_id" style="width:150px;">
+                <option value="">全部来源</option>
+                {% for s in sources %}
+                <option value="{{ s['id'] }}" {% if source_id == str(s['id']) %}selected{% end %}>{{ s['name'] }}</option>
+                {% end %}
+            </select>
+            <input type="text" class="form-control" name="keyword" placeholder="搜索关键词..." value="{{ keyword }}" style="width:200px;">
+            <button class="btn btn-primary"><i class="fas fa-search"></i> 搜索</button>
+            <a href="/admin/watch/data" class="btn btn-outline-secondary">重置</a>
+        </form>
+        <div class="d-flex gap-2">
+            <button class="btn btn-warning" id="deepCrawlBatchBtn" onclick="batchDeepCrawl()">
+                <i class="fas fa-brain me-1"></i>AI深度采集所选
+            </button>
+            <button class="btn btn-danger" id="batchDeleteBtn" disabled onclick="batchDelete()">
+                <i class="fas fa-trash me-1"></i>批量删除
+            </button>
+            <a href="/admin/watch/collect" class="btn btn-info"><i class="fas fa-satellite-dish me-1"></i>继续采集</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th style="width:40px;"><input type="checkbox" id="selectAll" onchange="toggleAll(this)"></th>
+                    <th style="width:60px;">ID</th>
+                    <th>标题</th>
+                    <th style="width:100px;">关键词</th>
+                    <th style="width:90px;">来源</th>
+                    <th style="width:90px;">深度采集</th>
+                    <th style="width:150px;">采集时间</th>
+                    <th style="width:140px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in data_list %}
+                <tr>
+                    <td><input type="checkbox" class="row-check" value="{{ d['id'] }}"></td>
+                    <td>{{ d['id'] }}</td>
+                    <td>
+                        {% if d.get('url') %}<a href="{{ d['url'] }}" target="_blank" class="text-decoration-none">{% end %}
+                        {{ d.get('title', '')[:80] }}
+                        {% if d.get('url') %}</a>{% end %}
+                    </td>
+                    <td><span class="badge bg-primary">{{ d.get('keyword', '') }}</span></td>
+                    <td><small class="text-muted">{{ d.get('source_name', '') }}</small></td>
+                    <td>
+                        {% set ds = d.get('deep_crawl_status', 0) %}
+                        {% if ds == 2 %}
+                        <span class="deep-status-2"><i class="fas fa-check-circle"></i> 已采集</span>
+                        {% elif ds == 1 %}
+                        <span class="deep-status-1"><i class="fas fa-spinner fa-spin"></i> 采集中</span>
+                        {% elif ds == 3 %}
+                        <span class="deep-status-3"><i class="fas fa-times-circle"></i> 失败</span>
+                        {% else %}
+                        <span class="deep-status-0"><i class="far fa-circle"></i> 未采集</span>
+                        {% end %}
+                    </td>
+                    <td><small>{{ d.get('collect_at', '')[:19] }}</small></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-warning" onclick="singleDeepCrawl({{ d['id'] }})" title="AI深度采集">
+                                <i class="fas fa-brain"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="viewDetail({{ d['id'] }})" title="查看详情">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteData({{ d['id'] }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% end %}
+                {% if not data_list %}
+                <tr><td colspan="8" class="text-center py-5 text-muted"><i class="fas fa-inbox fa-3x mb-3 d-block"></i>暂无数据，<a href="/admin/watch/collect">立即采集</a></td></tr>
+                {% end %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <small class="text-muted">共 {{ total }} 条记录</small>
+        <nav><ul class="pagination mb-0">
+            <li class="page-item {% if page<=1 %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page-1 }}&keyword={{ keyword }}&source_id={{ source_id }}">上一页</a>
+            </li>
+            {% for p in range(1, total_pages+1) %}
+            <li class="page-item {% if p==page %}active{% end %}">
+                <a class="page-link" href="?page={{ p }}&keyword={{ keyword }}&source_id={{ source_id }}">{{ p }}</a>
+            </li>
+            {% end %}
+            <li class="page-item {% if page>=total_pages %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page+1 }}&keyword={{ keyword }}&source_id={{ source_id }}">下一页</a>
+            </li>
+        </ul></nav>
+    </div>
+</div>
+
+<!-- 深度采集详情模态框 -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-brain me-2"></i>深度采集详情</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailContent">
+                <p class="text-center text-muted">加载中...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 批量采集进度模态框 -->
+<div class="modal fade progress-modal" id="progressModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-brain me-2"></i>AI深度采集进行中...</h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="spinner-border text-warning mb-3" role="status"></div>
+                    <p id="progressMsg">正在初始化深度采集...</p>
+                </div>
+                <div class="progress mb-3"><div class="progress-bar bg-warning" id="progressBar" style="width:0%"></div></div>
+                <div class="row text-center" id="progressStats">
+                    <div class="col"><h4 class="text-success" id="statSuccess">0</h4><small>成功</small></div>
+                    <div class="col"><h4 class="text-danger" id="statFail">0</h4><small>失败</small></div>
+                    <div class="col"><h4 class="text-secondary" id="statSkip">0</h4><small>跳过</small></div>
+                </div>
+                <div class="mt-3" id="logContainer" style="max-height:250px;overflow-y:auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="progressCloseBtn" data-bs-dismiss="modal" disabled>关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+var _xsrf='';
+document.addEventListener('DOMContentLoaded',()=>{
+    var m=document.cookie.match('_xsrf=([^;]*)');
+    if(m)_xsrf=m[1];
+    document.querySelectorAll('.row-check').forEach(cb=>cb.addEventListener('change',updateButtons));
+    document.getElementById('selectAll').addEventListener('change',function(){updateButtons();});
+    new bootstrap.Modal(document.getElementById('detailModal'));
+    new bootstrap.Modal(document.getElementById('progressModal'));
+});
+
+function updateButtons(){
+    var checked=document.querySelectorAll('.row-check:checked').length;
+    document.getElementById('batchDeleteBtn').disabled=checked===0;
+    document.getElementById('deepCrawlBatchBtn').disabled=checked===0;
+}
+function toggleAll(el){
+    document.querySelectorAll('.row-check').forEach(c=>c.checked=el.checked);
+    updateButtons();
+}
+function singleDeepCrawl(id){
+    var row=document.querySelector('input[value="'+id+'"]').closest('tr');
+    if(!row){alert('数据不存在');return;}
+    var url=row.querySelector('td:nth-child(3) a');
+    if(!url){alert('该条数据无链接，无法深度采集');return;}
+    if(!confirm('确定对该条目进行AI深度采集吗？'))return;
+
+    var f=new FormData();f.append('data_id',id);f.append('_xsrf',_xsrf);
+    var modal=new bootstrap.Modal(document.getElementById('progressModal'));
+    document.getElementById('progressMsg').textContent='正在进行AI深度采集...';
+    modal.show();
+    fetch('/admin/watch/deep-crawl/single',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        modal.hide();
+        if(d.success){
+            alert('深度采集完成！\n字数: '+d.data.word_count+'\n耗时: '+d.data.duration+'秒');
+            if(d.data.ai_summary)alert('AI摘要: '+d.data.ai_summary.substring(0,200));
+        }else{
+            alert('采集失败: '+d.message);
+        }
+        location.reload();
+    }).catch(e=>{modal.hide();alert('网络错误: '+e);});
+}
+function batchDeepCrawl(){
+    var ids=Array.from(document.querySelectorAll('.row-check:checked')).map(c=>c.value);
+    if(ids.length===0)return;
+    if(!confirm('确定对选中的 '+ids.length+' 条数据进行AI深度采集吗？'))return;
+
+    var progressModal=new bootstrap.Modal(document.getElementById('progressModal'));
+    document.getElementById('progressMsg').textContent='正在初始化批量深度采集...';
+    document.getElementById('progressBar').style.width='0%';
+    document.getElementById('statSuccess').textContent='0';
+    document.getElementById('statFail').textContent='0';
+    document.getElementById('statSkip').textContent='0';
+    document.getElementById('logContainer').innerHTML='';
+    document.getElementById('progressCloseBtn').disabled=true;
+    progressModal.show();
+
+    var f=new FormData();f.append('ids',ids.join(','));f.append('_xsrf',_xsrf);
+    fetch('/admin/watch/deep-crawl/batch',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            var data=d.data;
+            document.getElementById('statSuccess').textContent=data.success_count;
+            document.getElementById('statFail').textContent=data.fail_count;
+            document.getElementById('statSkip').textContent=data.skip_count;
+            document.getElementById('progressBar').style.width='100%';
+            document.getElementById('progressBar').classList.add('bg-success');
+            document.getElementById('progressMsg').textContent=d.message;
+            var logHtml='';
+            if(data.results){
+                data.results.forEach(r=>{
+                    var icon=r.status==='success'?'✅':r.status==='skip'?'⏭️':'❌';
+                    logHtml+='<div class="log-item '+(r.status==='success'?'success':r.status==='fail'?'error':'info')+'">'+icon+' ID='+r.id+' '+r.status+'</div>';
+                });
+            }
+            document.getElementById('logContainer').innerHTML=logHtml;
+        }else{
+            document.getElementById('progressMsg').textContent=d.message;
+        }
+        document.getElementById('progressCloseBtn').disabled=false;
+        setTimeout(()=>location.reload(),2000);
+    }).catch(e=>{
+        document.getElementById('progressMsg').textContent='网络错误: '+e;
+        document.getElementById('progressCloseBtn').disabled=false;
+    });
+}
+function viewDetail(id){
+    document.getElementById('detailContent').innerHTML='<p class="text-center text-muted">加载中...</p>';
+    new bootstrap.Modal(document.getElementById('detailModal')).show();
+    fetch('/admin/watch/deep-crawl/detail?data_id='+id).then(r=>r.json()).then(d=>{
+        var c=document.getElementById('detailContent');
+        if(d.success&&d.data){
+            var dd=d.data;
+            c.innerHTML=`
+                <div class="detail-card"><h6><i class="fas fa-robot me-1"></i>AI摘要</h6><p>${dd.ai_summary||'无'}</p></div>
+                <div class="row mb-3">
+                    <div class="col-3"><div class="detail-card"><h6>关键词</h6><p class="mb-0">${dd.keywords||'无'}</p></div></div>
+                    <div class="col-3"><div class="detail-card"><h6>分类</h6><p class="mb-0">${dd.category||'无'}</p></div></div>
+                    <div class="col-3"><div class="detail-card"><h6>情感</h6><p class="mb-0">${dd.sentiment||'无'}</p></div></div>
+                    <div class="col-3"><div class="detail-card"><h6>字数/阅读时长</h6><p class="mb-0">${dd.word_count||0}字 / ${dd.reading_time||'无'}</p></div></div>
+                </div>
+                <div class="detail-card"><h6>实体</h6><p class="mb-0">${dd.entities||'无'}</p></div>
+                <div class="detail-card"><h6>完整内容</h6><div style="max-height:400px;overflow-y:auto;white-space:pre-wrap;font-size:13px;line-height:1.8;">${(dd.full_content||'').substring(0,5000)}${(dd.full_content||'').length>5000?'...':''}</div></div>
+            `;
+        }else{
+            c.innerHTML='<p class="text-center text-muted">该数据尚未进行深度采集，请先点击 <i class="fas fa-brain"></i> 按钮采集</p>';
+        }
+    });
+}
+function deleteData(id){
+    if(!confirm('确认删除?'))return;
+    var f=new FormData();f.append('id',id);f.append('_xsrf',_xsrf);
+    fetch('/admin/watch/data/delete',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);if(d.success)location.reload();
+    });
+}
+function batchDelete(){
+    var ids=Array.from(document.querySelectorAll('.row-check:checked')).map(cb=>cb.value);
+    if(ids.length===0)return;
+    if(!confirm('确认删除 '+ids.length+' 条数据?'))return;
+    var f=new FormData();f.append('ids',ids.join(','));f.append('_xsrf',_xsrf);
+    fetch('/admin/watch/data/batch_delete',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);if(d.success)location.reload();
+    });
+}
+</script>
+{% end %}

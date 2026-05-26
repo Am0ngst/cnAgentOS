@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --chat-bg: #f0f2f5;
+        --chat-primary: #1a73e8;
+        --chat-ai-bg: #e8f0fe;
+        --chat-user-bg: #fff;
+        --chat-sidebar: #1e293b;
+    }
+    .chat-wrapper {
+        display: flex;
+        height: calc(100vh - 60px);
+        background: var(--chat-bg);
+    }
+    .chat-sidebar {
+        width: 280px;
+        background: var(--chat-sidebar);
+        color: white;
+        padding: 20px 0;
+        overflow-y: auto;
+        flex-shrink: 0;
+    }
+    .chat-sidebar h5 {
+        padding: 0 20px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: rgba(255,255,255,0.4);
+        margin-bottom: 15px;
+    }
+    .chat-sidebar .emp-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+        color: rgba(255,255,255,0.7);
+    }
+    .chat-sidebar .emp-item:hover {
+        background: rgba(255,255,255,0.06);
+        color: white;
+    }
+    .chat-sidebar .emp-item.active {
+        background: rgba(26,115,232,0.2);
+        border-left-color: var(--chat-primary);
+        color: white;
+    }
+    .chat-sidebar .emp-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+    .emp-avatar.ai { background: linear-gradient(135deg, #f59e0b, #f97316); }
+    .emp-avatar.api { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+    .chat-sidebar .emp-info { flex:1; min-width:0; }
+    .chat-sidebar .emp-info .emp-name { font-size:14px; font-weight:600; }
+    .chat-sidebar .emp-info .emp-desc { font-size:11px; opacity:0.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-header {
+        padding: 16px 24px;
+        background: white;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .chat-header h4 { margin:0; font-size:18px; }
+    .chat-header .badge { font-size:11px; }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .chat-msg {
+        display: flex;
+        gap: 12px;
+        max-width: 80%;
+    }
+    .chat-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .chat-msg .msg-avatar {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        font-size: 14px; color: white;
+    }
+    .chat-msg.user .msg-avatar { background: #1a73e8; }
+    .chat-msg.assistant .msg-avatar { background: linear-gradient(135deg, #f59e0b, #f97316); }
+    .chat-msg .msg-bubble {
+        padding: 12px 18px;
+        border-radius: 18px;
+        font-size: 14px;
+        line-height: 1.6;
+        word-break: break-word;
+    }
+    .chat-msg.user .msg-bubble {
+        background: var(--chat-primary);
+        color: white;
+        border-bottom-right-radius: 6px;
+    }
+    .chat-msg.assistant .msg-bubble {
+        background: var(--chat-ai-bg);
+        color: #333;
+        border-bottom-left-radius: 6px;
+        white-space: pre-wrap;
+    }
+    .chat-msg .msg-time {
+        font-size: 10px;
+        color: #999;
+        margin-top: 4px;
+        text-align: center;
+    }
+    .music-card {
+        display: flex;
+        gap: 14px;
+        padding: 10px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        align-items: center;
+    }
+    .music-card img {
+        width: 64px; height: 64px;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+    .music-card .mc-info h6 { margin:0 0 4px 0; font-size:14px; }
+    .music-card .mc-info p { margin:0; font-size:12px; color:#888; }
+    .music-card .btn-play {
+        width:40px; height:40px; border-radius:50%;
+        background: var(--chat-primary);
+        border: none; color: white;
+        font-size: 16px; cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .chat-input-area {
+        padding: 16px 24px;
+        background: white;
+        border-top: 1px solid #e0e0e0;
+    }
+    .chat-input-box {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+    }
+    .chat-input-box .at-prefix {
+        background: var(--chat-primary);
+        color: white;
+        padding: 10px 16px;
+        border-radius: 24px;
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .chat-input-box textarea {
+        flex: 1;
+        border: 1px solid #ddd;
+        border-radius: 24px;
+        padding: 10px 18px;
+        resize: none;
+        outline: none;
+        font-size: 14px;
+        min-height: 44px;
+        max-height: 120px;
+        transition: border-color 0.3s;
+    }
+    .chat-input-box textarea:focus { border-color: var(--chat-primary); }
+    .chat-input-box .send-btn {
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        background: var(--chat-primary);
+        border: none; color: white;
+        font-size: 18px; cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+    }
+    .chat-input-box .send-btn:hover { transform: scale(1.1); }
+
+    .typing-indicator {
+        display: flex; gap:4px; padding:12px 18px;
+    }
+    .typing-indicator span {
+        width:8px; height:8px; border-radius:50%;
+        background: #bbb;
+        animation: typing 1.4s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(2){ animation-delay:0.2s; }
+    .typing-indicator span:nth-child(3){ animation-delay:0.4s; }
+    @keyframes typing { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    .empty-chat {
+        flex:1; display:flex; align-items:center; justify-content:center;
+        flex-direction: column; color: #ccc;
+    }
+    .empty-chat i { font-size: 72px; margin-bottom: 20px; }
+    .empty-chat p { font-size: 16px; }
+    .empty-chat .emp-hints {
+        display: flex; gap: 8px; flex-wrap: wrap;
+        justify-content: center; margin-top: 20px;
+    }
+    .emp-hints .hint {
+        padding: 6px 16px; border-radius: 20px;
+        border: 1px solid #e0e0e0; cursor: pointer;
+        font-size: 13px; transition: all 0.2s; color: #666;
+    }
+    .emp-hints .hint:hover { background: var(--chat-ai-bg); border-color: var(--chat-primary); color: var(--chat-primary); }
+</style>
+
+<div class="chat-wrapper">
+    <div class="chat-sidebar">
+        <h5><i class="fas fa-robot me-2"></i>数字员工</h5>
+        <div id="empList"></div>
+    </div>
+
+    <div class="chat-main">
+        <div class="chat-header" id="chatHeader">
+            <div class="emp-avatar ai" id="headerAvatar" style="width:40px;height:40px;"><i class="fas fa-robot"></i></div>
+            <div>
+                <h4 id="headerName">选择数字员工</h4>
+                <small class="text-muted" id="headerDesc">点击左侧选择一个数字员工开始对话</small>
+            </div>
+            <span class="badge bg-primary ms-auto" id="headerType"></span>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="empty-chat">
+                <i class="fas fa-robot"></i>
+                <p>选择一个数字员工开始对话</p>
+                <div class="emp-hints" id="empHints"></div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <div class="chat-input-box">
+                <span class="at-prefix" id="atPrefix">@请选择</span>
+                <textarea id="chatInput" rows="1" placeholder="输入消息..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}" style="height:44px;"></textarea>
+                <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+var _xsrf='',emps=[],currentEmp=null,chatHistory={};
+
+document.addEventListener('DOMContentLoaded',()=>{
+    var m=document.cookie.match('_xsrf=([^;]*)');
+    if(m)_xsrf=m[1];
+    loadEmps();
+});
+
+function loadEmps(){
+    fetch('/admin/digital-employees').then(r=>r.text()).then(html=>{
+        var parser=new DOMParser();
+        var doc=parser.parseFromString(html,'text/html');
+        var rows=doc.querySelectorAll('tbody tr');
+        emps=[];
+        rows.forEach(tr=>{
+            var tds=tr.querySelectorAll('td');
+            if(tds.length>=6){
+                var id=tds[0].textContent.trim();
+                var name=tds[1].textContent.trim();
+                var alias=tds[2].textContent.trim().replace('@','');
+                var type=tds[3].textContent.includes('AI')?'AI':'普通';
+                var desc=tds[5].textContent.trim();
+                var status=tds[6].textContent.includes('启用');
+                if(status)emps.push({id,alias,name,type,desc});
+            }
+        });
+        renderSidebar();
+    });
+}
+
+function renderSidebar(){
+    var el=document.getElementById('empList');
+    var hints=document.getElementById('empHints');
+    el.innerHTML='';hints.innerHTML='';
+    emps.forEach(e=>{
+        var cls=e.type==='AI'?'ai':'api';
+        el.innerHTML+=`<div class="emp-item" onclick="selectEmp('${e.alias}')" id="emp_${e.alias}">
+            <div class="emp-avatar ${cls}"><i class="fas ${e.type==='AI'?'fa-brain':'fa-cog'}"></i></div>
+            <div class="emp-info">
+                <div class="emp-name">@${e.alias}</div>
+                <div class="emp-desc">${e.name}</div>
+            </div>
+        </div>`;
+        hints.innerHTML+=`<span class="hint" onclick="selectEmp('${e.alias}')">@${e.alias}</span>`;
+    });
+    if(!emps.length){
+        el.innerHTML='<p style="padding:20px;font-size:13px;color:rgba(255,255,255,0.4);">暂无可用的数字员工<br>请在管理中录入</p>';
+    }
+}
+
+function selectEmp(alias){
+    currentEmp=emps.find(e=>e.alias===alias);
+    if(!currentEmp)return;
+    document.querySelectorAll('.emp-item').forEach(i=>i.classList.remove('active'));
+    document.getElementById('emp_'+alias).classList.add('active');
+    document.getElementById('atPrefix').textContent='@'+alias;
+    document.getElementById('headerName').textContent=currentEmp.name;
+    document.getElementById('headerDesc').textContent=currentEmp.desc||'';
+    document.getElementById('headerType').textContent=currentEmp.type;
+    document.getElementById('headerType').className='badge ms-auto '+(currentEmp.type==='AI'?'bg-warning text-dark':'bg-info');
+    var av=document.getElementById('headerAvatar');
+    av.className='emp-avatar '+(currentEmp.type==='AI'?'ai':'api');
+    av.innerHTML='<i class="fas '+(currentEmp.type==='AI'?'fa-brain':'fa-cog')+'"></i>';
+
+    if(chatHistory[alias]){
+        document.getElementById('chatMessages').innerHTML=chatHistory[alias];
+    }else{
+        document.getElementById('chatMessages').innerHTML=`<div class="empty-chat">
+            <i class="fas ${currentEmp.type==='AI'?'fa-brain':'fa-cog'}"></i>
+            <p>向 @${alias} 发送消息</p>
+            <small class="text-muted">${currentEmp.desc||''}</small>
+        </div>`;
+    }
+    document.getElementById('chatInput').focus();
+}
+
+function appendMsg(role,content){
+    var msgs=document.getElementById('chatMessages');
+    if(msgs.querySelector('.empty-chat'))msgs.innerHTML='';
+    var time=new Date().toLocaleTimeString();
+    var div=document.createElement('div');
+    div.className='chat-msg '+role;
+    div.innerHTML=`<div class="msg-avatar"><i class="fas ${role==='user'?'fa-user':(currentEmp&&currentEmp.type==='AI'?'fa-brain':'fa-cog')}"></i></div>
+        <div><div class="msg-bubble">${content}</div><div class="msg-time">${time}</div></div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop=msgs.scrollHeight;
+    return div;
+}
+
+function appendMusicCard(data){
+    var msgs=document.getElementById('chatMessages');
+    if(msgs.querySelector('.empty-chat'))msgs.innerHTML='';
+    var d=data.data||data;
+    var card=`<div class="music-card">
+        <img src="${d.cover||''}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22><rect fill=%22%23ddd%22 width=%2264%22 height=%2264%22/><text x=%2232%22 y=%2240%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2216%22>🎵</text></svg>'">
+        <div class="mc-info"><h6>${d.song||'未知歌曲'}</h6><p>${d.singer||'未知歌手'}</p></div>
+        ${d.Music?`<button class="btn-play" onclick="window.open('${d.Music}')"><i class="fas fa-play"></i></button>`:''}
+    </div>`;
+    var div=document.createElement('div');
+    div.className='chat-msg assistant';
+    div.innerHTML=`<div class="msg-avatar"><i class="fas fa-cog"></i></div><div>${card}<div class="msg-time">${new Date().toLocaleTimeString()}</div></div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop=msgs.scrollHeight;
+}
+
+function showTyping(){
+    var msgs=document.getElementById('chatMessages');
+    if(msgs.querySelector('.empty-chat'))msgs.innerHTML='';
+    var div=document.createElement('div');
+    div.className='chat-msg assistant';
+    div.innerHTML=`<div class="msg-avatar"><i class="fas ${currentEmp&&currentEmp.type==='AI'?'fa-brain':'fa-cog'}"></i></div><div class="msg-bubble typing-indicator"><span></span><span></span><span></span></div>`;
+    div.id='typingIndicator';
+    msgs.appendChild(div);
+    msgs.scrollTop=msgs.scrollHeight;
+}
+
+function removeTyping(){
+    var t=document.getElementById('typingIndicator');
+    if(t)t.remove();
+}
+
+function sendMessage(){
+    if(!currentEmp){alert('请先选择一位数字员工');return;}
+    var input=document.getElementById('chatInput');
+    var msg=input.value.trim();
+    if(!msg)return;
+    input.value='';
+    appendMsg('user',msg);
+
+    if(currentEmp.type==='AI'){
+        sendAIMessage(msg);
+    }else{
+        sendApiMessage(msg);
+    }
+}
+
+function sendAIMessage(msg){
+    showTyping();
+    var xsrf=_xsrf;
+    var evt=new EventSource(`/admin/digital-chat/sse?_xsrf=${xsrf}&alias=${encodeURIComponent(currentEmp.alias)}&message=${encodeURIComponent(msg)}`);
+    var aiDiv=null;
+    evt.onmessage=function(e){
+        try{
+            var d=JSON.parse(e.data);
+            if(d.error){removeTyping();appendMsg('assistant','错误: '+d.error);evt.close();return;}
+            if(d.chunk){
+                removeTyping();
+                if(!aiDiv)aiDiv=appendMsg('assistant','');
+                aiDiv.querySelector('.msg-bubble').textContent=d.chunk;
+                var msgs=document.getElementById('chatMessages');
+                msgs.scrollTop=msgs.scrollHeight;
+            }
+            if(d.done){evt.close();}
+        }catch(ex){}
+    };
+    evt.onerror=function(){evt.close();removeTyping();};
+}
+
+function sendApiMessage(msg){
+    showTyping();
+    var f=new FormData();
+    f.append('alias',currentEmp.alias);
+    f.append('message',msg);
+    f.append('_xsrf',_xsrf);
+    fetch('/admin/digital-chat/send',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        removeTyping();
+        if(d.success){
+            if(currentEmp.alias==='音乐'&&d.data){
+                appendMusicCard(d.data);
+            }else if(d.data&&d.data.data&&d.data.data.song){
+                appendMusicCard(d.data.data);
+            }else if(d.data&&d.data.msg){
+                appendMsg('assistant',JSON.stringify(d.data.data||d.data,null,2));
+            }else{
+                appendMsg('assistant',JSON.stringify(d.data||d,{ensure_ascii:false}));
+            }
+        }else{
+            appendMsg('assistant','错误: '+d.message);
+        }
+    }).catch(e=>{
+        removeTyping();
+        appendMsg('assistant','网络错误: '+e);
+    });
+
+    saveChatHistory();
+}
+
+function saveChatHistory(){
+    if(currentEmp){
+        chatHistory[currentEmp.alias]=document.getElementById('chatMessages').innerHTML;
+    }
+}
+
+setInterval(saveChatHistory,3000);
+</script>
+{% end %}

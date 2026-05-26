@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-header">
+    <h2><i class="fas fa-cogs me-2"></i>功能管理</h2>
+    <div class="breadcrumb">
+        <i class="fas fa-home"></i> 首页 / 功能管理
+    </div>
+</div>
+
+<div class="content-body">
+    <!-- 操作栏 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <button class="btn btn-primary" onclick="openAddModal()">
+                <i class="fas fa-plus me-2"></i>新增功能
+            </button>
+        </div>
+        <div class="input-group" style="width: 300px;">
+            <input type="text" class="form-control" id="searchInput" placeholder="搜索功能名称...">
+            <button class="btn btn-outline-secondary" onclick="searchFunctions()">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 功能表格 -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>功能名称</th>
+                    <th>编码</th>
+                    <th>图标</th>
+                    <th>URL</th>
+                    <th>父级</th>
+                    <th>排序</th>
+                    <th>状态</th>
+                    <th width="150">操作</th>
+                </tr>
+            </thead>
+            <tbody id="functionTableBody">
+                {% for func in functions %}
+                <tr>
+                    <td>{{ func['id'] }}</td>
+                    <td>{{ func['name'] }}</td>
+                    <td>{{ func['code'] }}</td>
+                    <td><i class="{{ func['icon'] or 'fas fa-circle' }}"></i></td>
+                    <td>{{ func['url'] or '-' }}</td>
+                    <td>{{ func['parent_name'] or '-' }}</td>
+                    <td>{{ func['sort_order'] }}</td>
+                    <td>
+                        {% if func['status'] == 1 %}
+                        <span class="badge bg-success">启用</span>
+                        {% else %}
+                        <span class="badge bg-secondary">禁用</span>
+                        {% end %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="editFunction({{ func['id'] }}, '{{ func['name'] }}', '{{ func['code'] }}', '{{ func['icon'] or '' }}', '{{ func['url'] or '' }}', {{ func['parent_id'] or 'null' }}, {{ func['sort_order'] }}, {{ func['status'] }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFunction({{ func['id'] }}, '{{ func['name'] }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% end %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页 -->
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if page <= 1 %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page - 1 }}">上一页</a>
+            </li>
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {% if p == page %}active{% end %}">
+                <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+            </li>
+            {% end %}
+            <li class="page-item {% if page >= total_pages %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page + 1 }}">下一页</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<!-- 新增/编辑功能模态框 -->
+<div class="modal fade" id="functionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">新增功能</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="functionForm">
+                    {% module xsrf_form_html() %}
+                    <input type="hidden" id="funcId" name="id">
+                    <div class="mb-3">
+                        <label class="form-label">功能名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="funcName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">功能编码 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="funcCode" name="code" required>
+                        <small class="text-muted">唯一标识，如：user_manage</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">图标</label>
+                        <input type="text" class="form-control" id="funcIcon" name="icon" placeholder="fas fa-user">
+                        <small class="text-muted">FontAwesome图标类名</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL地址</label>
+                        <input type="text" class="form-control" id="funcUrl" name="url" placeholder="/admin/users">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">父级功能</label>
+                        <select class="form-select" id="funcParentId" name="parent_id">
+                            <option value="">无（作为一级菜单）</option>
+                            {% for parent in parent_functions %}
+                            <option value="{{ parent['id'] }}">{{ parent['name'] }}</option>
+                            {% end %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">排序</label>
+                        <input type="number" class="form-control" id="funcSortOrder" name="sort_order" value="0" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">状态</label>
+                        <select class="form-select" id="funcStatus" name="status">
+                            <option value="1">启用</option>
+                            <option value="0">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveFunction()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteMessage">确定要删除该功能吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+    let deleteFuncId = null;
+    let functionModal = null;
+    let deleteModal = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        functionModal = new bootstrap.Modal(document.getElementById('functionModal'));
+        deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    });
+
+    function openAddModal() {
+        document.getElementById('modalTitle').textContent = '新增功能';
+        document.getElementById('functionForm').reset();
+        document.getElementById('funcId').value = '';
+        functionModal.show();
+    }
+
+    function editFunction(id, name, code, icon, url, parentId, sortOrder, status) {
+        document.getElementById('modalTitle').textContent = '编辑功能';
+        document.getElementById('funcId').value = id;
+        document.getElementById('funcName').value = name;
+        document.getElementById('funcCode').value = code;
+        document.getElementById('funcIcon').value = icon;
+        document.getElementById('funcUrl').value = url;
+        document.getElementById('funcParentId').value = parentId || '';
+        document.getElementById('funcSortOrder').value = sortOrder;
+        document.getElementById('funcStatus').value = status;
+        functionModal.show();
+    }
+
+    function saveFunction() {
+        const form = document.getElementById('functionForm');
+        const formData = new FormData(form);
+        const funcId = document.getElementById('funcId').value;
+        
+        const url = funcId ? '/admin/functions/update' : '/admin/functions/create';
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message || '操作失败');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('操作失败');
+        });
+    }
+
+    function deleteFunction(id, name) {
+        deleteFuncId = id;
+        document.getElementById('deleteMessage').textContent = `确定要删除功能 "${name}" 吗？\n注意：删除父级功能会同时删除其子功能。`;
+        deleteModal.show();
+    }
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (!deleteFuncId) return;
+        
+        const formData = new FormData();
+        formData.append('id', deleteFuncId);
+        
+        fetch('/admin/functions/delete', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message || '删除失败');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('删除失败');
+        });
+        
+        deleteModal.hide();
+    });
+
+    function searchFunctions() {
+        const keyword = document.getElementById('searchInput').value;
+        if (keyword) {
+            window.location.href = `/admin/functions?search=${encodeURIComponent(keyword)}`;
+        } else {
+            window.location.href = '/admin/functions';
+        }
+    }
+</script>
+{% end %}

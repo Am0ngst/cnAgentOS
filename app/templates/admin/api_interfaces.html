@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .api-card {
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        background: white;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+    .api-card:hover {
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .api-card .method-badge {
+        display: inline-block;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    .method-GET { background: #e8f5e9; color: #2e7d32; }
+    .method-POST { background: #fff3e0; color: #e65100; }
+    .api-card .api-name {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: #1a1a2e;
+    }
+    .api-card .api-url {
+        font-size: 13px;
+        font-family: 'Consolas', 'Courier New', monospace;
+        color: #6c757d;
+        word-break: break-all;
+        background: #f8f9fa;
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin: 10px 0;
+    }
+    .api-card .api-meta {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        font-size: 12px;
+        color: #888;
+        margin-top: 10px;
+    }
+    .api-card .api-meta span i {
+        margin-right: 4px;
+    }
+    .api-card .api-tags {
+        margin-top: 10px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .api-card .api-tag {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        background: #e3f2fd;
+        color: #1565c0;
+    }
+    .api-card .card-actions {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        gap: 8px;
+    }
+    .api-card .card-actions button {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid #e0e0e0;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+    }
+    .api-card .card-actions button:hover {
+        background: #f5f5f5;
+        border-color: #bbb;
+    }
+    .api-card .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+    }
+    .status-enabled { background: #4caf50; }
+    .status-disabled { background: #9e9e9e; }
+    .api-card .qps-badge {
+        padding: 3px 10px;
+        border-radius: 10px;
+        font-size: 11px;
+        background: #fff8e1;
+        color: #f57f17;
+        font-weight: 600;
+    }
+</style>
+
+<div class="content-header">
+    <h2><i class="fas fa-plug me-2"></i>接口管理</h2>
+    <div class="breadcrumb"><i class="fas fa-home"></i> 首页 / 接口管理</div>
+</div>
+
+<div class="content-body">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <form class="d-flex gap-2" method="get">
+            <input type="text" class="form-control" name="keyword" placeholder="搜索接口..." value="{{ keyword }}" style="width:200px;">
+            <input type="text" class="form-control" name="tags" placeholder="标签筛选..." value="{{ tags }}" style="width:150px;">
+            <button class="btn btn-primary"><i class="fas fa-search"></i> 搜索</button>
+            <a href="/admin/api-interfaces" class="btn btn-outline-secondary">重置</a>
+        </form>
+        <button class="btn btn-success" onclick="openCreateModal()"><i class="fas fa-plus me-1"></i>新增接口</button>
+    </div>
+
+    <div class="row">
+        {% for api in data_list %}
+        <div class="col-md-6">
+            <div class="api-card">
+                <div class="card-actions">
+                    <button onclick="editApi({{ api['id'] }})" title="编辑"><i class="fas fa-edit text-info"></i></button>
+                    <button onclick="deleteApi({{ api['id'] }}, '{{ api['name'] }}')" title="删除"><i class="fas fa-trash text-danger"></i></button>
+                </div>
+                <span class="method-badge method-{{ api.get('method','GET') }}">{{ api.get('method','GET') }}</span>
+                <span style="font-size:12px;color:#888;margin-left:10px;">
+                    <span class="status-dot {% if api.get('status',1) %}status-enabled{% else %}status-disabled{% end %}"></span>
+                    {% if api.get('has_token') %}<i class="fas fa-key text-warning ms-2" title="支持Token鉴权"></i>{% end %}
+                </span>
+                <div class="api-name mt-2">{{ api['name'] }} <small class="text-muted">({{ api['code'] }})</small></div>
+                <div class="api-url">{{ api['url'] }}</div>
+                <div class="api-meta">
+                    <span><i class="fas fa-file-code"></i>{{ api.get('resp_format','JSON') }}</span>
+                    {% if api.get('params_desc') %}<span><i class="fas fa-sliders-h"></i>{{ api['params_desc'] }}</span>{% end %}
+                    {% if api.get('example_url') %}<span><i class="fas fa-external-link-alt"></i><a href="{{ api['example_url'] }}" target="_blank">示例</a></span>{% end %}
+                </div>
+                {% if api.get('qps_limit') %}
+                <div class="mt-2">
+                    <span class="qps-badge"><i class="fas fa-tachometer-alt"></i> {{ api['qps_limit'] }}</span>
+                </div>
+                {% end %}
+                {% if api.get('remark') %}
+                <div class="mt-2" style="font-size:12px;color:#999;"><i class="fas fa-info-circle me-1"></i>{{ api['remark'] }}</div>
+                {% end %}
+                {% if api.get('tags') %}
+                <div class="api-tags">
+                    {% for tag in api.get('tags','').split(',') %}
+                    <span class="api-tag">{{ tag.strip() }}</span>
+                    {% end %}
+                </div>
+                {% end %}
+            </div>
+        </div>
+        {% end %}
+    </div>
+
+    {% if not data_list %}
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-plug fa-4x mb-3 d-block"></i>
+        <p>暂无接口数据，点击右上角"新增接口"添加</p>
+    </div>
+    {% end %}
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <small class="text-muted">共 {{ total }} 条记录</small>
+        <nav><ul class="pagination mb-0">
+            <li class="page-item {% if page<=1 %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page-1 }}&keyword={{ keyword }}&tags={{ tags }}">上一页</a>
+            </li>
+            {% for p in range(1, total_pages+1) %}
+            <li class="page-item {% if p==page %}active{% end %}">
+                <a class="page-link" href="?page={{ p }}&keyword={{ keyword }}&tags={{ tags }}">{{ p }}</a>
+            </li>
+            {% end %}
+            <li class="page-item {% if page>=total_pages %}disabled{% end %}">
+                <a class="page-link" href="?page={{ page+1 }}&keyword={{ keyword }}&tags={{ tags }}">下一页</a>
+            </li>
+        </ul></nav>
+    </div>
+</div>
+
+<!-- 表单模态框 -->
+<div class="modal fade" id="apiFormModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="apiFormTitle"><i class="fas fa-plug me-2"></i>新增接口</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="apiForm">
+                    <input type="hidden" id="afId" name="id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">接口名称 <span class="text-danger">*</span></label>
+                            <input class="form-control" id="afName" name="name" placeholder="如：随机网易云音乐" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">接口编码 <span class="text-danger">*</span></label>
+                            <input class="form-control" id="afCode" name="code" placeholder="如：music_wy_rand" required>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">接口地址 <span class="text-danger">*</span></label>
+                            <input class="form-control" id="afUrl" name="url" placeholder="https://api.example.com/endpoint" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">请求方式</label>
+                            <select class="form-select" id="afMethod" name="method">
+                                <option value="GET">GET</option><option value="POST">POST</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">返回格式</label>
+                            <select class="form-select" id="afRespFormat" name="resp_format">
+                                <option value="JSON">JSON</option><option value="XML">XML</option><option value="HTML">HTML</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">支持Token</label>
+                            <select class="form-select" id="afHasToken" name="has_token">
+                                <option value="0">否</option><option value="1">是</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">参数说明</label>
+                            <input class="form-control" id="afParamsDesc" name="params_desc" placeholder="如：city=城市名称">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">示例地址</label>
+                            <input class="form-control" id="afExampleUrl" name="example_url" placeholder="https://api.example.com?city=北京">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">QPS限制</label>
+                            <input class="form-control" id="afQpsLimit" name="qps_limit" placeholder="如：每2秒最多4次">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">标签 (英文逗号分隔)</label>
+                            <input class="form-control" id="afTags" name="tags" placeholder="如：工具,天气">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">状态</label>
+                            <select class="form-select" id="afStatus" name="status">
+                                <option value="1">启用</option><option value="0">禁用</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">备注</label>
+                            <textarea class="form-control" id="afRemark" name="remark" rows="2" placeholder="接口备注说明"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button class="btn btn-primary" onclick="saveApi()"><i class="fas fa-save me-1"></i>保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+var _xsrf='';
+document.addEventListener('DOMContentLoaded',()=>{
+    var m=document.cookie.match('_xsrf=([^;]*)');
+    if(m)_xsrf=m[1];
+    new bootstrap.Modal(document.getElementById('apiFormModal'));
+});
+
+function openCreateModal(){
+    document.getElementById('apiFormTitle').innerHTML='<i class="fas fa-plug me-2"></i>新增接口';
+    document.getElementById('apiForm').reset();
+    document.getElementById('afId').value='';
+    new bootstrap.Modal(document.getElementById('apiFormModal')).show();
+}
+
+function editApi(id){
+    var row=document.querySelector(`tr[data-id]`);
+    fetch('/admin/api-interfaces').then(r=>r.text()).then(()=>{
+        var apis=[];
+        {% for api in data_list %}
+        apis.push({
+            id:{{ api['id'] }},
+            name:"{{ api['name'].replace('"','\\"') }}",
+            code:"{{ api['code'].replace('"','\\"') }}",
+            url:"{{ api['url'].replace('"','\\"') }}",
+            method:"{{ api.get('method','GET') }}",
+            resp_format:"{{ api.get('resp_format','JSON') }}",
+            params_desc:"{{ (api.get('params_desc') or '').replace('"','\\"') }}",
+            example_url:"{{ (api.get('example_url') or '').replace('"','\\"') }}",
+            qps_limit:"{{ (api.get('qps_limit') or '').replace('"','\\"') }}",
+            has_token:{{ api.get('has_token',0) }},
+            remark:"{{ (api.get('remark') or '').replace('"','\\"') }}",
+            tags:"{{ (api.get('tags') or '').replace('"','\\"') }}",
+            status:{{ api.get('status',1) }}
+        });
+        {% end %}
+        var a=apis.find(x=>x.id==id);
+        if(!a)return;
+        document.getElementById('apiFormTitle').innerHTML='<i class="fas fa-edit me-2"></i>编辑接口';
+        document.getElementById('afId').value=a.id;
+        document.getElementById('afName').value=a.name;
+        document.getElementById('afCode').value=a.code;
+        document.getElementById('afUrl').value=a.url;
+        document.getElementById('afMethod').value=a.method;
+        document.getElementById('afRespFormat').value=a.resp_format;
+        document.getElementById('afParamsDesc').value=a.params_desc||'';
+        document.getElementById('afExampleUrl').value=a.example_url||'';
+        document.getElementById('afQpsLimit').value=a.qps_limit||'';
+        document.getElementById('afHasToken').value=a.has_token;
+        document.getElementById('afTags').value=a.tags||'';
+        document.getElementById('afRemark').value=a.remark||'';
+        document.getElementById('afStatus').value=a.status;
+        new bootstrap.Modal(document.getElementById('apiFormModal')).show();
+    });
+}
+
+function saveApi(){
+    var id=document.getElementById('afId').value;
+    var f=new FormData(document.getElementById('apiForm'));
+    f.append('_xsrf',_xsrf);
+    var url=id?'/admin/api-interfaces/update':'/admin/api-interfaces/create';
+    fetch(url,{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);
+        if(d.success)location.reload();
+    });
+}
+
+function deleteApi(id,name){
+    if(!confirm('确认删除接口 "'+name+'" ?'))return;
+    var f=new FormData();f.append('id',id);f.append('_xsrf',_xsrf);
+    fetch('/admin/api-interfaces/delete',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);if(d.success)location.reload();
+    });
+}
+</script>
+{% end %}

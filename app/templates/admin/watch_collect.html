@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --watch-bg: #0a0e17;
+        --watch-card: rgba(18, 24, 40, 0.95);
+        --watch-accent: #00d4ff;
+        --watch-glow: rgba(0, 212, 255, 0.3);
+        --watch-purple: #a855f7;
+        --watch-green: #22d3ee;
+    }
+
+    .watch-wrapper {
+        min-height: calc(100vh - 60px);
+        background: var(--watch-bg);
+        background-image:
+            radial-gradient(ellipse at 20% 50%, rgba(0, 212, 255, 0.06) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.05) 0%, transparent 50%),
+            radial-gradient(ellipse at 50% 80%, rgba(34, 211, 238, 0.04) 0%, transparent 50%);
+        padding: 40px 20px;
+    }
+
+    .watch-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .watch-header {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+    .watch-header h1 {
+        font-size: 42px;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--watch-accent), var(--watch-purple));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: 4px;
+        margin-bottom: 10px;
+    }
+    .watch-header p {
+        color: rgba(255,255,255,0.35);
+        font-size: 14px;
+        letter-spacing: 2px;
+    }
+
+    .search-box-wrapper {
+        position: relative;
+        margin-bottom: 35px;
+    }
+    .search-box {
+        display: flex;
+        align-items: center;
+        background: var(--watch-card);
+        border: 2px solid rgba(255,255,255,0.06);
+        border-radius: 60px;
+        padding: 6px;
+        transition: all 0.4s ease;
+        box-shadow: 0 0 0 0 var(--watch-glow);
+    }
+    .search-box:focus-within {
+        border-color: var(--watch-accent);
+        box-shadow: 0 0 30px var(--watch-glow);
+    }
+    .search-box .search-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--watch-accent), var(--watch-purple));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+        flex-shrink: 0;
+    }
+    .search-box input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: white;
+        font-size: 18px;
+        padding: 15px 20px;
+    }
+    .search-box input::placeholder {
+        color: rgba(255,255,255,0.25);
+    }
+    .search-box .search-btn {
+        height: 54px;
+        padding: 0 30px;
+        border-radius: 50px;
+        background: linear-gradient(135deg, var(--watch-accent), var(--watch-purple));
+        border: none;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        letter-spacing: 1px;
+        flex-shrink: 0;
+    }
+    .search-box .search-btn:hover {
+        transform: scale(1.04);
+        box-shadow: 0 0 30px var(--watch-glow);
+    }
+
+    .source-panel {
+        background: var(--watch-card);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(20px);
+    }
+    .source-panel h3 {
+        color: rgba(255,255,255,0.7);
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-bottom: 18px;
+    }
+    .source-toggles {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .source-toggle {
+        position: relative;
+    }
+    .source-toggle input { display: none; }
+    .source-toggle label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 22px;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 1px solid rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.5);
+        font-size: 14px;
+        user-select: none;
+        background: rgba(255,255,255,0.02);
+    }
+    .source-toggle label .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        transition: all 0.3s;
+    }
+    .source-toggle input:checked + label {
+        background: rgba(0, 212, 255, 0.1);
+        border-color: var(--watch-accent);
+        color: white;
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+    .source-toggle input:checked + label .dot {
+        background: var(--watch-accent);
+        box-shadow: 0 0 10px var(--watch-accent);
+    }
+
+    .param-row {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .param-row>span {
+        color: rgba(255,255,255,0.4);
+        font-size: 13px;
+    }
+    .param-input {
+        width: 80px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        color: white;
+        padding: 10px 14px;
+        text-align: center;
+        font-size: 15px;
+        outline: none;
+        transition: all 0.3s;
+    }
+    .param-input:focus {
+        border-color: var(--watch-accent);
+        box-shadow: 0 0 15px rgba(0,212,255,0.15);
+    }
+
+    .result-area {
+        background: var(--watch-card);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 20px;
+        padding: 25px;
+    }
+    .result-area h3 {
+        color: rgba(255,255,255,0.6);
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-bottom: 16px;
+    }
+    .result-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-radius: 12px;
+        margin-bottom: 6px;
+        transition: all 0.25s;
+        border: 1px solid transparent;
+    }
+    .result-item:hover {
+        background: rgba(255,255,255,0.03);
+        border-color: rgba(255,255,255,0.06);
+    }
+    .result-item .ri-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: rgba(0,212,255,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--watch-accent);
+        font-size: 14px;
+        margin-right: 14px;
+        flex-shrink: 0;
+    }
+    .result-item .ri-content {
+        flex: 1;
+        min-width: 0;
+    }
+    .result-item .ri-title {
+        color: rgba(255,255,255,0.85);
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .result-item .ri-meta {
+        color: rgba(255,255,255,0.3);
+        font-size: 11px;
+        margin-top: 3px;
+    }
+    .result-item .ri-btn {
+        padding: 6px 16px;
+        border-radius: 15px;
+        background: rgba(0,212,255,0.1);
+        border: none;
+        color: var(--watch-accent);
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.25s;
+        flex-shrink: 0;
+        margin-left: 12px;
+        text-decoration: none;
+    }
+    .result-item .ri-btn:hover {
+        background: rgba(0,212,255,0.2);
+    }
+
+    .collect-status {
+        text-align: center;
+        padding: 40px;
+        color: rgba(255,255,255,0.3);
+    }
+    .collect-status.spinning i {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: rgba(255,255,255,0.15);
+    }
+    .empty-state i {
+        font-size: 60px;
+        display: block;
+        margin-bottom: 20px;
+    }
+    .empty-state p {
+        font-size: 15px;
+        letter-spacing: 2px;
+    }
+
+    .source-manage-bar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+    }
+    .source-manage-bar button {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.5);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .source-manage-bar button:hover {
+        border-color: var(--watch-accent);
+        color: var(--watch-accent);
+    }
+</style>
+
+<div class="watch-wrapper">
+    <div class="watch-container">
+        <div class="watch-header">
+            <h1>瞭 望 采 集</h1>
+            <p>INTELLIGENT DATA COLLECTION</p>
+        </div>
+
+        <div class="search-box-wrapper">
+            <div class="search-box">
+                <div class="search-icon"><i class="fas fa-search"></i></div>
+                <input type="text" id="watchKeyword" placeholder="输入关键词，采集全网数据..." onkeydown="if(event.key==='Enter')startCollect()">
+                <button class="search-btn" onclick="startCollect()">
+                    <i class="fas fa-rocket me-1"></i>采集
+                </button>
+            </div>
+        </div>
+
+        <div class="source-panel" id="sourcePanel">
+            <div class="source-manage-bar">
+                <button onclick="manageSources()"><i class="fas fa-sliders-h me-1"></i>管理数据源</button>
+            </div>
+            <h3><i class="fas fa-satellite-dish me-2"></i>采集源选择</h3>
+            <div class="source-toggles" id="sourceToggles">
+                {% for src in sources %}
+                <div class="source-toggle">
+                    <input type="checkbox" id="src_{{ src['id'] }}" value="{{ src['id'] }}" checked>
+                    <label for="src_{{ src['id'] }}"><span class="dot"></span>{{ src['name'] }}</label>
+                </div>
+                {% end %}
+                {% if not sources %}
+                <p style="color:rgba(255,255,255,0.3);font-size:13px;">暂无采集源，请先添加</p>
+                {% end %}
+            </div>
+            <div class="param-row">
+                <span><i class="fas fa-cog me-1"></i>采集页数:</span>
+                <input type="number" class="param-input" id="pageCount" value="1" min="1" max="20">
+                <span style="opacity:0.5;">(每页约10条)</span>
+            </div>
+        </div>
+
+        <div class="result-area">
+            <h3><i class="fas fa-stream me-2"></i>采集结果</h3>
+            <div id="resultList">
+                <div class="empty-state">
+                    <i class="fas fa-globe-asia"></i>
+                    <p>输入关键词开始瞭望</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据源管理模态框 -->
+<div class="modal fade" id="sourceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-satellite-dish me-2"></i>数据源管理</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <button class="btn btn-sm btn-outline-info mb-3" onclick="openSourceForm()"><i class="fas fa-plus me-1"></i>新增数据源</button>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead><tr><th>名称</th><th>编码</th><th>入口URL</th><th>分页参数</th><th>状态</th><th>操作</th></tr></thead>
+                        <tbody id="sourceTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据源表单模态框 -->
+<div class="modal fade" id="sourceFormModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="sourceFormTitle">新增数据源</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="sourceForm">
+                    <input type="hidden" id="sfId" name="id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">名称</label>
+                            <input class="form-control bg-dark text-white border-secondary" id="sfName" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">编码</label>
+                            <input class="form-control bg-dark text-white border-secondary" id="sfCode" name="code" required>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">入口URL <small class="text-muted">(用{keyword}和{pn}占位)</small></label>
+                            <input class="form-control bg-dark text-white border-secondary" id="sfUrl" name="url_template" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">分页参数名</label>
+                            <input class="form-control bg-dark text-white border-secondary" id="sfPageParam" name="page_param" value="pn">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">排序</label>
+                            <input type="number" class="form-control bg-dark text-white border-secondary" id="sfSort" name="sort_order" value="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">状态</label>
+                            <select class="form-select bg-dark text-white border-secondary" id="sfStatus" name="status">
+                                <option value="1">启用</option><option value="0">禁用</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Headers (JSON格式)</label>
+                            <textarea class="form-control bg-dark text-white border-secondary" id="sfHeaders" name="headers_json" rows="4" style="font-size:11px;"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button class="btn btn-info" onclick="saveSource()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+var _xsrf='';
+document.addEventListener('DOMContentLoaded',()=>{
+    var m=document.cookie.match('_xsrf=([^;]*)');
+    if(m)_xsrf=m[1];
+    new bootstrap.Modal(document.getElementById('sourceModal'));
+    new bootstrap.Modal(document.getElementById('sourceFormModal'));
+});
+
+function startCollect(){
+    var kw=document.getElementById('watchKeyword').value.trim();
+    if(!kw){alert('请输入关键词');return;}
+    var checks=document.querySelectorAll('#sourceToggles input[type=checkbox]:checked');
+    if(checks.length===0){alert('请选择采集源');return;}
+    var ids=Array.from(checks).map(c=>c.value).join(',');
+    var pc=document.getElementById('pageCount').value||1;
+    var list=document.getElementById('resultList');
+    list.innerHTML='<div class="collect-status spinning"><i class="fas fa-circle-notch fa-2x me-3"></i>正在采集，请稍候...</div>';
+    var f=new FormData();
+    f.append('keyword',kw);f.append('source_ids',ids);f.append('page_count',pc);f.append('_xsrf',_xsrf);
+    fetch('/admin/watch/execute',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            var debugHtml='';
+            if(d.debug){
+                debugHtml='<div style="text-align:left;margin-top:15px;font-size:12px;opacity:0.7;max-height:200px;overflow-y:auto;">';
+                d.debug.forEach(function(line){debugHtml+='<div>'+line+'</div>';});
+                debugHtml+='</div>';
+            }
+            list.innerHTML='<div class="collect-status" style="color:var(--watch-green);"><i class="fas fa-check-circle fa-3x mb-3 d-block"></i>'+d.message+'</div>'+debugHtml;
+            setTimeout(()=>location.href='/admin/watch/data',2500);
+        }else{
+            var errHtml='';
+            if(d.debug){
+                errHtml='<div style="text-align:left;margin-top:15px;font-size:12px;opacity:0.7;max-height:200px;overflow-y:auto;">';
+                d.debug.forEach(function(line){errHtml+='<div style="color:#ff6b6b;">'+line+'</div>';});
+                errHtml+='</div>';
+            }
+            list.innerHTML='<div class="collect-status" style="color:#ff6b6b;"><i class="fas fa-exclamation-circle fa-3x mb-3 d-block"></i>'+d.message+'</div>'+errHtml;
+        }
+    }).catch(e=>{
+        list.innerHTML='<div class="collect-status" style="color:#ff6b6b;">网络错误: '+e.message+'</div>';
+    });
+}
+
+function manageSources(){
+    fetch('/admin/watch/sources').then(r=>r.json()).then(d=>{
+        var tb=document.getElementById('sourceTableBody');
+        tb.innerHTML='';
+        d.data.forEach(s=>{
+            tb.innerHTML+=`<tr>
+                <td>${s.name}</td><td>${s.code}</td>
+                <td><small>${(s.url_template||'').substring(0,60)}</small></td>
+                <td>${s.page_param||'pn'}</td>
+                <td>${s.status?'<span class="badge bg-success">启用</span>':'<span class="badge bg-secondary">禁用</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-info" onclick="editSource(${s.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSource(${s.id},'${s.name}')"><i class="fas fa-trash"></i></button>
+                </td></tr>`;
+        });
+        new bootstrap.Modal(document.getElementById('sourceModal')).show();
+    });
+}
+
+function openSourceForm(){
+    document.getElementById('sourceFormTitle').textContent='新增数据源';
+    document.getElementById('sourceForm').reset();
+    document.getElementById('sfId').value='';
+    new bootstrap.Modal(document.getElementById('sourceFormModal')).show();
+}
+
+function editSource(id){
+    fetch('/admin/watch/sources').then(r=>r.json()).then(d=>{
+        var s=d.data.find(x=>x.id==id);
+        if(!s)return;
+        document.getElementById('sourceFormTitle').textContent='编辑数据源';
+        document.getElementById('sfId').value=s.id;
+        document.getElementById('sfName').value=s.name;
+        document.getElementById('sfCode').value=s.code;
+        document.getElementById('sfUrl').value=s.url_template||'';
+        document.getElementById('sfPageParam').value=s.page_param||'pn';
+        document.getElementById('sfSort').value=s.sort_order||0;
+        document.getElementById('sfStatus').value=s.status||1;
+        document.getElementById('sfHeaders').value=s.headers_json||'';
+        new bootstrap.Modal(document.getElementById('sourceFormModal')).show();
+    });
+}
+
+function saveSource(){
+    var id=document.getElementById('sfId').value;
+    var f=new FormData(document.getElementById('sourceForm'));
+    f.append('action',id?'update':'create');
+    f.append('_xsrf',_xsrf);
+    fetch('/admin/watch/sources',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);
+        if(d.success){
+            bootstrap.Modal.getInstance(document.getElementById('sourceFormModal')).hide();
+            manageSources();
+        }
+    });
+}
+
+function deleteSource(id,name){
+    if(!confirm('确认删除 '+name+' ?'))return;
+    var f=new FormData();
+    f.append('action','delete');f.append('id',id);f.append('_xsrf',_xsrf);
+    fetch('/admin/watch/sources',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);if(d.success)manageSources();
+    });
+}
+</script>
+{% end %}

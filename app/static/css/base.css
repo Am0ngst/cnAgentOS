@@ -1,0 +1,13 @@
+/* 基础重置 */
+* {
+	margin:0;
+	padding: O;
+}
+html,body {
+	height: 100%;
+	width: 100%;
+}
+
+.error{
+	color: red;
+}

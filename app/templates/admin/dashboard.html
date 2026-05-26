@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-header">
+    <h2><i class="fas fa-tachometer-alt me-2"></i>控制台</h2>
+    <div class="breadcrumb">
+        <i class="fas fa-home"></i> 首页 / 控制台
+    </div>
+</div>
+
+<div class="content-body">
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        欢迎使用智能瞭望与智能问数系统！后台主页功能正在开发中，敬请期待。
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-3 mb-4">
+            <div class="stat-card">
+                <div class="icon blue">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="number" id="userCount">0</div>
+                <div class="label">总用户数</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="stat-card">
+                <div class="icon green">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="number">0</div>
+                <div class="label">今日活跃</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="stat-card">
+                <div class="icon orange">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="number">0</div>
+                <div class="label">访问量</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="stat-card">
+                <div class="icon purple">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div class="number">0</div>
+                <div class="label">数据记录</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h5 class="mb-3"><i class="fas fa-bell me-2"></i>系统公告</h5>
+        <div class="card">
+            <div class="card-body">
+                <p class="text-muted">暂无公告</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+    // 获取用户数量
+    fetch('/admin/api/users/count')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('userCount').textContent = data.count || 0;
+        })
+        .catch(err => console.error('获取用户数量失败:', err));
+</script>
+{% end %}
