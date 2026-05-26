@@ -1,16 +1,53 @@
-{% extends "base.html" %}
-{% block body %}
-<h3>登录</h3>
-
-{% if error %}
-<div class="error">{{ errorH</div>
-{% end %}
-
-<form method="post" action="/auth/login">
-<inputname="username">
-	<input name="password">
-	<button type="submit">登录admin</button>
-{% module xsrf_form_html() %}
-</form>
-
-[% end %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录</title>
+    <link rel="stylesheet" href="{{ static_url('bootstrap-5.3.8-dist/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ static_url('fontawesome-free-5.15.4-web/css/all.min.css') }}">
+    <style>
+        :root{--bg:#0a0e17;--card:rgba(18,24,40,0.95);--accent:#00d4ff;--purple:#a855f7;}
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{
+            min-height:100vh;background:var(--bg);
+            background-image:radial-gradient(ellipse at 30% 40%,rgba(0,212,255,0.08) 0%,transparent 60%),
+                           radial-gradient(ellipse at 70% 60%,rgba(168,85,247,0.06) 0%,transparent 60%);
+            display:flex;align-items:center;justify-content:center;
+            font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+        }
+        .card{
+            width:360px;background:var(--card);border:1px solid rgba(255,255,255,0.08);
+            border-radius:20px;padding:40px;backdrop-filter:blur(20px);
+            box-shadow:0 20px 60px rgba(0,0,0,0.5);text-align:center;
+        }
+        .card h3{color:#fff;margin-bottom:30px;font-size:22px;}
+        .card p{color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:24px;line-height:1.6;}
+        .btn{
+            display:block;width:100%;padding:14px;margin-bottom:12px;
+            border-radius:12px;border:none;font-size:15px;font-weight:600;
+            cursor:pointer;text-decoration:none;transition:all .3s;
+        }
+        .btn-admin{
+            background:linear-gradient(135deg,var(--accent),var(--purple));
+            color:#fff;
+        }
+        .btn-user{
+            background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);
+            border:1px solid rgba(255,255,255,0.1);
+        }
+        .btn:hover{transform:translateY(-2px);}
+        .btn-admin:hover{box-shadow:0 10px 30px rgba(0,212,255,0.3);}
+        .btn-user:hover{background:rgba(255,255,255,0.1);color:#fff;}
+    </style>
+</head>
+<body>
+<div class="card">
+    <h3><i class="fas fa-brain me-2" style="color:var(--accent)"></i>智能瞭望与智能问数系统</h3>
+    <p>请选择登录入口</p>
+    <a href="/user/login" class="btn btn-user">普通用户登录</a>
+    <a href="/user/register" class="btn btn-user">注册新账号</a>
+    <a href="/admin/login" class="btn btn-admin">后台管理登录</a>
+</div>
+</body>
+</html>

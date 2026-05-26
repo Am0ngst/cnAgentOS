@@ -3,6 +3,5 @@ import tornado.web
 from app.controllers.base import BaseHandler
 
 class IndexHandler(BaseHandler):
-	@tornado.web.authenticated
-	def get(self):
-		self.sender("index.html",title="后台",username=self.current_user)
+    def get(self):
+        self.render("login.html")

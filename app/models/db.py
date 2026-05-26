@@ -161,8 +161,8 @@ def init_db():
         conn.execute(
             """
             INSERT OR IGNORE INTO ai_models (id, name, code, api_key, base_url, model_name, description, is_default)
-            VALUES (1, 'DeepSeek V4 Pro', 'deepseek_v4', 'sk-8249d07d3adf4e5ca54b1d4f0c16a30d',
-                    'https://api.deepseek.com', 'deepseek-v4-pro', 'DeepSeek 高性能大模型', 1)
+            VALUES (1, 'DeepSeek V4 Pro', 'deepseek_v4', 'sk-0611a5df2b9449f8bc2eadaa3f9a47a2',
+                    'https://api.deepseek.com', 'deepseek-chat', 'DeepSeek 高性能大模型', 1)
             """
         )
 
@@ -331,8 +331,37 @@ def init_db():
             INSERT OR IGNORE INTO digital_employees (id, name, alias, emp_type, model_id, api_id,
                 system_prompt, params_config, description, sort_order)
             VALUES (1, '川小农', '川小农', 'AI', 1, NULL,
-                '你是一个智能助手名叫川小农，你热情、专业、乐于助人。请用中文回复用户的问题，回答简洁清晰。',
-                NULL, '基于默认AI模型的智能对话助手，支持SSE流式响应', 1)
+                '姓名：川小农
+角色：你是一名专业的文案编写高手(专家级)，你有丰富的与AI、计算机科学与技术、数据库、信息安全、物联网有关领域的专业知识、项目经验和工作经验。同时你也具备较强的技术实践经验能力和技术储备。你需要根据工作步骤按要求完成任务。你需要根据步骤中的提示最终生成详细的文案内容。
+工作步骤：
+1、用户输入"开始"后，提示用户输入关键字或关键信息或关键词，以用作生成第2步备选文案主题。关键字或关键词形如:四川薪资，人才、就业
+2、当用户根据提示输入关键词等信息后，你需要根据要求及需求生成10个备选主题，以markdown格式输出渲染，用户可以根据这10个主题完成第3步中的大纲生成任务，markdown格式输出如下:
+```
+【川农文案生成助手】-v1.0
+### 备选主题列表
+---
+作者:郭一宁
+[1]、xxxxxxxxxx
+[2]、yyyyyyyyyy
+……
+[10]、zzzzzzzzzz
+```
+3、提示用户输入第2步生成的列表中的主题编号，你需要根据用户输入的编号找到对应的主题信息，再以该主题信息生成三种不同风格的大纲，以供用户选择大纲生成详细内容，大纲风格及格式以markdown格式输出，格式如下:
+```
+【风格一】专业报告风
+需要生成一级+二级章节大纲，体现专业、格式规范、可以用于word风格。
+【风格二】小红书种草风
+需要生成一级主要小标题，风格参考小红书特点或规则。
+【风格三】普通叙述风
+只需要生成编写思路。
+```
+4、提示用户输入【风格一】或【风格二】或【风格三】选择风格，你需要根据选择的风格生成详细内容。内容生成时一个一个章节生成！！！注意：这非常重要！！！。
+5、内容生成时一个一个章节生成！！！生成详细内容时，一个章节段落生成后，提示用户确认，如果有修改要求，按新的要求生成后，再继续，如果用户输入"继续"则可以生成下一个章节或段落内容。
+限制条件：
+--必须按工作步骤执行。
+--体现专业性、职业性、规范性。
+--其他未靠完善或有缺漏的逻辑由你自行补全。',
+                NULL, '川小农文案编写生成助手，按步骤引导创作专业文案', 1)
             """
         )
         conn.execute(
@@ -353,5 +382,47 @@ def init_db():
                 NULL,
                 NULL,
                 '随机获取一首网易云音乐歌曲，返回歌曲卡片信息', 3)
+            """
+        )
+
+        # 插入普通用户和会员角色
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO roles (id, name, code, description, is_system)
+            VALUES (2, '普通用户', 'user', '前台普通用户，可注册获得', 1)
+            """
+        )
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO roles (id, name, code, description, is_system)
+            VALUES (3, '会员', 'vip', '付费会员，享有更多权限(本期预留)', 1)
+            """
+        )
+
+        # 对话历史表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS conversation_history(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                title TEXT DEFAULT NULL,
+                model_id INTEGER DEFAULT NULL,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
+
+        # 对话消息表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS conversation_messages(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                conversation_id INTEGER NOT NULL,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                msg_type TEXT DEFAULT 'text',
+                extra TEXT DEFAULT NULL,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
             """
         )

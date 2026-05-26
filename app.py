@@ -49,6 +49,13 @@ from app.controllers.deep_crawl import (
     DeepCrawlSingleHandler, DeepCrawlBatchHandler,
     DeepCrawlStatsHandler, DeepCrawlDetailHandler
 )
+from app.controllers.user_chat import (
+    UserLoginHandler, UserRegisterHandler, UserLogoutHandler,
+    UserChatHandler, UserChatSSEHandler,
+    UserConversationListHandler, UserConversationMessagesHandler,
+    UserConversationDeleteHandler,
+    UserModelListHandler, UserEmployeeListHandler
+)
 #引入db - model层
 from app.models.db import init_db
 
@@ -157,6 +164,17 @@ def make_app():
         (r"/admin/watch/deep-crawl/batch", DeepCrawlBatchHandler),
         (r"/admin/watch/deep-crawl/stats", DeepCrawlStatsHandler),
         (r"/admin/watch/deep-crawl/detail", DeepCrawlDetailHandler),
+        # 用户侧路由
+        (r"/user/login", UserLoginHandler),
+        (r"/user/register", UserRegisterHandler),
+        (r"/user/logout", UserLogoutHandler),
+        (r"/user/chat", UserChatHandler),
+        (r"/user/chat/sse", UserChatSSEHandler),
+        (r"/user/api/conversations", UserConversationListHandler),
+        (r"/user/api/messages", UserConversationMessagesHandler),
+        (r"/user/api/conversations/delete", UserConversationDeleteHandler),
+        (r"/user/api/models", UserModelListHandler),
+        (r"/user/api/employees", UserEmployeeListHandler),
     ],
     **settings
     )
