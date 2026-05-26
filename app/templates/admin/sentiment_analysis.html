@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+#sent-root { margin:-25px; background:#080e1a; min-height:calc(100vh - 60px); color:#fff; }
+.sent-top { display:flex; align-items:center; justify-content:space-between; padding:20px 30px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.sent-top h2 { color:#fff; margin:0; font-size:22px; letter-spacing:2px; }
+.sent-top h2 i { color:#aa64ff; }
+.sent-top span { color:rgba(255,255,255,0.3); font-size:12px; }
+.sent-body { padding:25px 30px; }
+
+.row-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.ana-card { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:24px 20px; cursor:pointer; transition:all .3s; position:relative; overflow:hidden; }
+.ana-card::before { content:''; position:absolute; top:0; left:0; width:100%; height:3px; transition:height .3s; }
+.ana-card:hover { background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.12); transform:translateY(-2px); box-shadow:0 8px 30px rgba(0,0,0,0.3); }
+.ana-card:hover::before { height:4px; }
+.ana-card .icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:14px; }
+.ana-card h4 { font-size:15px; font-weight:600; margin:0 0 8px; color:rgba(255,255,255,0.9); }
+.ana-card p { font-size:12px; color:rgba(255,255,255,0.35); margin:0; line-height:1.6; }
+.c1::before { background:linear-gradient(90deg,#aa64ff,#00d4ff); }
+.c1 .icon { background:rgba(170,100,255,0.12); color:#aa64ff; }
+.c2::before { background:linear-gradient(90deg,#00ff88,#00d4ff); }
+.c2 .icon { background:rgba(0,255,136,0.12); color:#00ff88; }
+.c3::before { background:linear-gradient(90deg,#ffaa00,#ff5078); }
+.c3 .icon { background:rgba(255,170,0,0.12); color:#ffaa00; }
+.c1:hover { border-color:rgba(170,100,255,0.3); }
+.c2:hover { border-color:rgba(0,255,136,0.3); }
+.c3:hover { border-color:rgba(255,170,0,0.3); }
+
+.result-block { display:none; margin-top:24px; background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05); border-radius:16px; overflow:hidden; }
+.result-top { display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.result-top h4 { margin:0; font-size:15px; font-weight:600; color:rgba(255,255,255,0.85); }
+.result-tags { display:flex; gap:8px; }
+.tag { padding:3px 12px; border-radius:20px; font-size:11px; font-weight:600; }
+.tag-processing { background:rgba(170,100,255,0.12); color:#aa64ff; }
+.tag-done { background:rgba(0,255,136,0.1); color:#00ff88; }
+.tag-error { background:rgba(255,80,120,0.12); color:#ff5078; }
+.tag-risk-high { background:rgba(255,80,120,0.1); color:#ff5078; }
+.tag-risk-medium { background:rgba(255,170,0,0.1); color:#ffaa00; }
+.tag-risk-low { background:rgba(0,255,136,0.08); color:#00ff88; }
+.btn-stop { background:rgba(255,80,120,0.1); border:1px solid rgba(255,80,120,0.2); color:#ff5078; padding:6px 16px; border-radius:8px; cursor:pointer; font-size:12px; transition:all .2s; }
+.btn-stop:hover { background:rgba(255,80,120,0.2); }
+.result-body { padding:22px; min-height:320px; max-height:580px; overflow-y:auto; font-size:14px; line-height:1.9; color:rgba(255,255,255,0.7); }
+.result-body h1,.result-body h2,.result-body h3 { color:rgba(255,255,255,0.9); margin-top:16px; margin-bottom:10px; }
+.result-body h1 { font-size:20px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px; }
+.result-body h2 { font-size:17px; }
+.result-body h3 { font-size:15px; }
+.result-body code { background:rgba(255,255,255,0.05); color:#00d4ff; padding:2px 6px; border-radius:4px; font-size:13px; }
+.result-body pre { background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px; overflow-x:auto; }
+.result-body strong { color:rgba(255,255,255,0.9); }
+.result-body ul,.result-body ol { padding-left:20px; }
+.result-body li { margin:4px 0; }
+
+.loading-box { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height:280px; color:rgba(255,255,255,0.25); }
+.pulse-dot { width:10px; height:10px; background:#aa64ff; border-radius:50%; animation:pulse 1.2s infinite; margin-bottom:14px; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(2)} }
+
+.hist-block { margin-top:24px; }
+.hist-block h4 { font-size:15px; font-weight:600; color:rgba(255,255,255,0.7); margin:0 0 14px; }
+.hist-table { width:100%; border-collapse:collapse; font-size:13px; }
+.hist-table th { text-align:left; padding:10px 14px; color:rgba(255,255,255,0.3); font-weight:500; border-bottom:1px solid rgba(255,255,255,0.06); font-size:11px; text-transform:uppercase; letter-spacing:1px; }
+.hist-table td { padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.03); color:rgba(255,255,255,0.6); }
+.hist-table tr:hover td { background:rgba(255,255,255,0.02); }
+.hist-table .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+.badge-high { background:rgba(255,80,120,0.1); color:#ff5078; }
+.badge-medium { background:rgba(255,170,0,0.1); color:#ffaa00; }
+.badge-low { background:rgba(0,255,136,0.08); color:#00ff88; }
+.btn-icon { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.5); width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:12px; transition:all .2s; }
+.btn-icon:hover { background:rgba(255,255,255,0.08); color:#fff; }
+.btn-icon.danger:hover { background:rgba(255,80,120,0.15); color:#ff5078; border-color:rgba(255,80,120,0.3); }
+
+.modal-dark .modal-content { background:#111827; border:1px solid rgba(255,255,255,0.08); color:#fff; }
+.modal-dark .modal-header { border-bottom:1px solid rgba(255,255,255,0.06); }
+.modal-dark .modal-footer { border-top:1px solid rgba(255,255,255,0.06); }
+.modal-dark .btn-close { filter:invert(1); }
+.modal-dark .btn-secondary { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:#fff; }
+
+.pagination { display:flex; gap:6px; list-style:none; padding:0; justify-content:center; margin-top:16px; }
+.pagination a,.pagination span { display:block; padding:6px 14px; border-radius:8px; font-size:13px; text-decoration:none; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); color:rgba(255,255,255,0.5); }
+.pagination .active span { background:rgba(170,100,255,0.15); border-color:rgba(170,100,255,0.3); color:#aa64ff; }
+.pagination a:hover { background:rgba(255,255,255,0.06); color:#fff; }
+</style>
+
+<div id="sent-root">
+    <div class="sent-top">
+        <div>
+            <h2><i class="fas fa-brain"></i> 智能舆情 · AI 分析中心</h2>
+            <span>基于大模型自主分析聊天 & 瞭望数据，实时洞察系统态势</span>
+        </div>
+        <span style="font-size:12px;color:rgba(255,255,255,0.2);">{{ username }}</span>
+    </div>
+
+    <div class="sent-body">
+        <div class="row-cards">
+            <div class="ana-card c1" onclick="startAnalysis('comprehensive')">
+                <div class="icon"><i class="fas fa-chart-pie"></i></div>
+                <h4>综合舆情分析</h4>
+                <p>全面扫描聊天对话与瞭望采集数据，一键评估系统整体舆情态势</p>
+            </div>
+            <div class="ana-card c2" onclick="startAnalysis('chat')">
+                <div class="icon"><i class="fas fa-comments"></i></div>
+                <h4>对话风险检测</h4>
+                <p>深度分析用户对话记录，智能识别异常言论与潜在敏感话题</p>
+            </div>
+            <div class="ana-card c3" onclick="startAnalysis('watch')">
+                <div class="icon"><i class="fas fa-satellite"></i></div>
+                <h4>瞭望趋势洞察</h4>
+                <p>追踪瞭望采集关键词走势，快速发现热点话题与舆情动向</p>
+            </div>
+        </div>
+
+        <div class="result-block" id="resultPanel">
+            <div class="result-top">
+                <h4><i class="fas fa-sparkles" style="color:#aa64ff;margin-right:8px;"></i><span id="resultTitle">分析结果</span></h4>
+                <div class="result-tags">
+                    <span class="tag tag-processing" id="resultStatus">就绪</span>
+                    <span class="tag tag-risk-low" id="resultRisk">-</span>
+                    <span class="tag tag-risk-low" id="resultScore">-</span>
+                </div>
+                <button class="btn-stop" onclick="stopAnalysis()"><i class="fas fa-stop"></i> 停止</button>
+            </div>
+            <div class="result-body" id="analysisContent">
+                <div class="loading-box">
+                    <div class="pulse-dot"></div>
+                    <span>点击上方卡片开始 AI 分析</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hist-block">
+            <h4><i class="fas fa-history" style="color:rgba(255,255,255,0.3);margin-right:6px;"></i>历史分析记录</h4>
+            <table class="hist-table">
+                <thead><tr><th>标题</th><th>类型</th><th>风险</th><th>评分</th><th>模型</th><th>时间</th><th></th></tr></thead>
+                <tbody id="historyTable">
+                    {% if analyses %}
+                    {% for a in analyses %}
+                    <tr>
+                        <td>{{ a['title'] }}</td>
+                        <td>{{ a['analysis_type'] }}</td>
+                        <td>
+                            {% if a['risk_level'] == 'high' %}
+                            <span class="badge badge-high">高风险</span>
+                            {% elif a['risk_level'] == 'medium' %}
+                            <span class="badge badge-medium">中风险</span>
+                            {% else %}
+                            <span class="badge badge-low">低风险</span>
+                            {% end %}
+                        </td>
+                        <td>{{ a['risk_score'] or 0 }}</td>
+                        <td>{{ a['model_used'] or '-' }}</td>
+                        <td>{{ a['create_at'] }}</td>
+                        <td style="text-align:right;">
+                            <button class="btn-icon" onclick="viewAnalysis({{ a['id'] }})" title="查看"><i class="fas fa-eye"></i></button>
+                            <button class="btn-icon danger" onclick="deleteAnalysis({{ a['id'] }})" title="删除"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% end %}
+                    {% else %}
+                    <tr><td colspan="7" style="text-align:center;padding:40px;color:rgba(255,255,255,0.15);">暂无分析记录，点击上方卡片开始你的第一次 AI 分析</td></tr>
+                    {% end %}
+                </tbody>
+            </table>
+            {% if total_pages > 1 %}
+            <ul class="pagination">
+                {% for p in range(1, total_pages + 1) %}
+                <li class="{% if p == page %}active{% end %}">
+                    {% if p == page %}<span>{{ p }}</span>{% else %}<a href="?page={{ p }}">{{ p }}</a>{% end %}
+                </li>
+                {% end %}
+            </ul>
+            {% end %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade modal-dark" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-alt" style="color:#aa64ff;margin-right:8px;"></i>分析详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailContent" style="white-space:pre-wrap;line-height:1.8;font-size:14px;color:rgba(255,255,255,0.7);"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+var currentSSE = null;
+
+function startAnalysis(type) {
+    if (currentSSE) { currentSSE.close(); currentSSE = null; }
+    var titles = {
+        comprehensive: '综合舆情分析',
+        chat: '对话风险检测',
+        watch: '瞭望趋势洞察'
+    };
+    var panel = document.getElementById('resultPanel');
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('resultTitle').textContent = titles[type] || '分析结果';
+    document.getElementById('analysisContent').innerHTML = '<div class="loading-box"><div class="pulse-dot"></div><span>AI 正在分析数据，请稍候...</span></div>';
+    document.getElementById('resultStatus').textContent = '分析中';
+    document.getElementById('resultStatus').className = 'tag tag-processing';
+    document.getElementById('resultRisk').textContent = '-';
+    document.getElementById('resultRisk').className = 'tag tag-risk-low';
+    document.getElementById('resultScore').textContent = '-';
+    document.getElementById('resultScore').className = 'tag tag-risk-low';
+
+    var url = '/admin/sentiment/api/analyze?type=' + type;
+    currentSSE = new EventSource(url);
+    var contentEl = document.getElementById('analysisContent');
+    var fullContent = '';
+    var firstChunk = true;
+    var tmpDiv = document.createElement('div');
+
+    currentSSE.onmessage = function(event) {
+        if (event.data === '[DONE]') {
+            currentSSE.close(); currentSSE = null;
+            document.getElementById('resultStatus').textContent = '已完成';
+            document.getElementById('resultStatus').className = 'tag tag-done';
+            parseResultBadges(fullContent);
+            refreshHistory();
+            return;
+        }
+        try {
+            var data = JSON.parse(event.data);
+            if (data.error) {
+                contentEl.innerHTML = '<div style="text-align:center;padding:40px;color:#ff5078;"><i class="fas fa-exclamation-circle" style="font-size:32px;display:block;margin-bottom:10px;"></i>' + data.error + '</div>';
+                document.getElementById('resultStatus').textContent = '错误';
+                document.getElementById('resultStatus').className = 'tag tag-error';
+                return;
+            }
+            if (firstChunk) { contentEl.innerHTML = ''; firstChunk = false; }
+            fullContent += data.content;
+            tmpDiv.innerHTML = marked.parse(fullContent);
+            contentEl.innerHTML = tmpDiv.innerHTML;
+            contentEl.scrollTop = contentEl.scrollHeight;
+        } catch(e) {}
+    };
+
+    currentSSE.onerror = function() {
+        if (currentSSE) { currentSSE.close(); currentSSE = null; }
+        document.getElementById('resultStatus').textContent = '中断';
+        document.getElementById('resultStatus').className = 'tag tag-error';
+    };
+}
+
+function parseResultBadges(text) {
+    var riskEl = document.getElementById('resultRisk');
+    var scoreEl = document.getElementById('resultScore');
+    var match = text.match(/\{[\s\S]*"risk_level"[\s\S]*\}/);
+    if (match) {
+        try {
+            var d = JSON.parse(match[0]);
+            var rl = d.risk_level;
+            riskEl.textContent = {high:'高风险',medium:'中风险',low:'低风险'}[rl] || rl;
+            riskEl.className = 'tag tag-risk-' + (rl === 'high' ? 'high' : rl === 'medium' ? 'medium' : 'low');
+            scoreEl.textContent = '评分 ' + (d.risk_score || 0);
+            scoreEl.className = 'tag tag-risk-' + (d.risk_score >= 60 ? 'high' : d.risk_score >= 30 ? 'medium' : 'low');
+        } catch(e) {}
+    }
+}
+
+function stopAnalysis() {
+    if (currentSSE) { currentSSE.close(); currentSSE = null; }
+    document.getElementById('resultStatus').textContent = '已停止';
+    document.getElementById('resultStatus').className = 'tag tag-risk-medium';
+}
+
+function viewAnalysis(id) {
+    fetch('/admin/sentiment/api/analyses?page=1')
+        .then(function(r){return r.json();})
+        .then(function(resp){
+            var a = resp.data.find(function(x){return x.id == id;});
+            if (a && a.result) {
+                var div = document.createElement('div');
+                div.innerHTML = marked.parse(a.result);
+                document.getElementById('detailContent').innerHTML = div.innerHTML;
+                new bootstrap.Modal(document.getElementById('detailModal')).show();
+            }
+        });
+}
+
+function deleteAnalysis(id) {
+    if (!confirm('确定删除此分析记录？')) return;
+    var fd = new FormData();
+    fd.append('id', id);
+    fetch('/admin/sentiment/api/analysis-delete', {
+        method: 'POST', body: fd,
+        headers: { 'X-XSRFToken': getCookie('_xsrf') }
+    }).then(function(r){return r.json();})
+      .then(function(d){ if (d.success) location.reload(); else alert(d.message || '删除失败'); });
+}
+
+function refreshHistory() {
+    fetch('/admin/sentiment/api/analyses?page=1')
+        .then(function(r){return r.json();})
+        .then(function(resp){
+            if (!resp.success || !resp.data.length) return;
+            var badgeClass = {high:'badge-high',medium:'badge-medium',low:'badge-low'};
+            document.getElementById('historyTable').innerHTML = resp.data.map(function(a){
+                var b = badgeClass[a.risk_level] || 'badge-low';
+                var lvl = {high:'高风险',medium:'中风险',low:'低风险'}[a.risk_level] || a.risk_level;
+                return '<tr>' +
+                    '<td>' + a.title + '</td>' +
+                    '<td>' + a.analysis_type + '</td>' +
+                    '<td><span class="badge ' + b + '">' + lvl + '</span></td>' +
+                    '<td>' + (a.risk_score || 0) + '</td>' +
+                    '<td>' + (a.model_used || '-') + '</td>' +
+                    '<td>' + a.create_at + '</td>' +
+                    '<td style="text-align:right;"><button class="btn-icon" onclick="viewAnalysis(' + a.id + ')" title="查看"><i class="fas fa-eye"></i></button> <button class="btn-icon danger" onclick="deleteAnalysis(' + a.id + ')" title="删除"><i class="fas fa-trash"></i></button></td>' +
+                    '</tr>';
+            }).join('');
+        });
+}
+
+function getCookie(name) {
+    var m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return m ? m[2] : '';
+}
+</script>
+{% end %}

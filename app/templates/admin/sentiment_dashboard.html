@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+#dash-root { margin:-25px; background:#080e1a; min-height:calc(100vh - 60px); }
+.dash-top { display:flex; align-items:center; justify-content:space-between; padding:16px 30px; }
+.dash-top h3 { color:#fff; margin:0; font-size:20px; letter-spacing:2px; }
+.dash-top-sub { color:rgba(255,255,255,0.4); font-size:12px; margin-top:3px; }
+.btn-fs { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:8px 20px; border-radius:8px; cursor:pointer; font-size:13px; }
+.btn-fs:hover { background:rgba(255,255,255,0.15); }
+.row-stats { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; padding:0 30px 15px; }
+.stat-box { text-align:center; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); border-radius:10px; padding:16px 8px; }
+.stat-num { font-size:28px; font-weight:700; line-height:1.2; }
+.stat-lbl { font-size:11px; color:rgba(255,255,255,0.3); margin-top:4px; }
+.row-charts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; padding:0 30px 15px; }
+.pnl { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:14px; }
+.pnl-hd { font-size:13px; font-weight:600; color:rgba(255,255,255,0.75); padding-bottom:8px; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.pnl-ch { height:300px; }
+.row-bot { display:grid; grid-template-columns:1fr 1fr; gap:15px; padding:0 30px 30px; }
+.pnl-ch-sm { height:280px; }
+
+#fs-overlay { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:99999; background:#080e1a; overflow:hidden; }
+.fs-grid { width:100%; height:100%; display:grid; grid-template-rows:auto 1fr auto; }
+.fs-top { display:flex; align-items:center; justify-content:space-between; padding:14px 25px; }
+.fs-top .stats { display:flex; gap:30px; font-size:13px; color:rgba(255,255,255,0.55); }
+.fs-top .stats b { font-size:16px; }
+.fs-main { display:grid; grid-template-columns:300px 1fr 300px; min-height:0; overflow:hidden; padding:0 15px; gap:12px; }
+.fs-side { display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+.fs-pnl { background:rgba(255,255,255,0.025); border-radius:10px; border:1px solid rgba(255,255,255,0.05); padding:12px; }
+.fs-pnl-hd { font-size:13px; font-weight:600; color:rgba(255,255,255,0.7); padding-bottom:6px; margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.fs-bot { padding:10px 25px; border-top:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; gap:25px; overflow:hidden; }
+.fs-hint { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); color:rgba(255,255,255,0.65); font-size:16px; z-index:100001; pointer-events:none; display:none; }
+</style>
+
+<div id="dash-root">
+    <div class="dash-top">
+        <div><h3><i class="fas fa-globe-asia" style="color:#00d4ff;"></i> 数智大屏 · 智慧舆情指挥中心</h3>
+        <div class="dash-top-sub"><span id="dash-clock"></span> · 操作员: {{ username }}</div></div>
+        <button class="btn-fs" onclick="enterFS()"><i class="fas fa-expand"></i> 全屏</button>
+    </div>
+    <div class="row-stats">
+        <div class="stat-box"><div class="stat-num" id="s0" style="color:#00d4ff;">-</div><div class="stat-lbl">用户</div></div>
+        <div class="stat-box"><div class="stat-num" id="s1" style="color:#00ff88;">-</div><div class="stat-lbl">对话</div></div>
+        <div class="stat-box"><div class="stat-num" id="s2" style="color:#ffaa00;">-</div><div class="stat-lbl">瞭望</div></div>
+        <div class="stat-box"><div class="stat-num" id="s3" style="color:#aa64ff;">-</div><div class="stat-lbl">模型</div></div>
+        <div class="stat-box"><div class="stat-num" id="s4" style="color:#ff5078;">-</div><div class="stat-lbl">报告</div></div>
+        <div class="stat-box"><div class="stat-num" id="s5" style="color:#ff4444;">-</div><div class="stat-lbl">高危</div></div>
+    </div>
+    <div class="row-charts">
+        <div class="pnl">
+            <div class="pnl-hd"><span style="color:#00d4ff;">■</span> 用户活跃度</div>
+            <div id="c-active" class="pnl-ch"></div>
+        </div>
+        <div class="pnl">
+            <div class="pnl-hd"><span style="color:#00d4ff;">■</span> 全球瞭望</div>
+            <div id="c-globe" class="pnl-ch"></div>
+        </div>
+        <div class="pnl" style="display:flex;flex-direction:column;gap:0;">
+            <div style="flex:1;min-height:0;">
+                <div class="pnl-hd"><span style="color:#ffaa00;">■</span> 瞭望关键词 TOP10</div>
+                <div id="c-kw" style="height:calc(100% - 26px);"></div>
+            </div>
+            <div style="flex:1;min-height:0;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">
+                <div class="pnl-hd"><span style="color:#aa64ff;">■</span> 模型调用统计</div>
+                <div id="c-model" style="height:calc(100% - 26px);"></div>
+            </div>
+        </div>
+    </div>
+    <div class="row-bot">
+        <div class="pnl"><div class="pnl-hd"><span style="color:#00d4ff;">■</span> 词云</div><div id="c-wc" class="pnl-ch-sm"></div></div>
+        <div class="pnl"><div class="pnl-hd"><span style="color:rgba(255,255,255,0.5);">■</span> 近期分析</div>
+            <div id="c-recent" style="height:280px;overflow-y:auto;font-size:13px;color:rgba(255,255,255,0.6);">
+                <div style="padding:8px;text-align:center;color:rgba(255,255,255,0.25);">加载中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="fs-overlay">
+    <div class="fs-grid">
+        <div class="fs-top">
+            <div class="stats">
+                <span>用户 <b id="fs0" style="color:#00d4ff;">-</b></span>
+                <span>对话 <b id="fs1" style="color:#00ff88;">-</b></span>
+                <span>瞭望 <b id="fs2" style="color:#ffaa00;">-</b></span>
+                <span>高危 <b id="fs4" style="color:#ff4444;">-</b></span>
+                <span>报告 <b id="fs3" style="color:#ff5078;">-</b></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:15px;">
+                <span id="fs-clock" style="color:rgba(255,255,255,0.4);font-size:12px;"></span>
+                <button class="btn-fs" onclick="exitFS()" style="background:rgba(255,80,120,0.2);border-color:rgba(255,80,120,0.3);color:#ff5078;">
+                    <i class="fas fa-compress"></i> 退出 (ESC)
+                </button>
+            </div>
+        </div>
+        <div class="fs-main">
+            <div class="fs-side">
+                <div class="fs-pnl"><div class="fs-pnl-hd"><span style="color:#00d4ff;">■</span> 用户活跃度</div><div id="fs-active" style="height:200px;"></div></div>
+                <div class="fs-pnl" style="flex:1;"><div class="fs-pnl-hd"><span style="color:#00d4ff;">■</span> 词云</div><div id="fs-wc" style="height:calc(100% - 24px);"></div></div>
+            </div>
+            <div id="fs-globe"></div>
+            <div class="fs-side">
+                <div class="fs-pnl"><div class="fs-pnl-hd"><span style="color:#ffaa00;">■</span> 关键词 TOP10</div><div id="fs-kw" style="height:200px;"></div></div>
+                <div class="fs-pnl" style="flex:1;"><div class="fs-pnl-hd"><span style="color:#aa64ff;">■</span> 模型调用</div><div id="fs-model" style="height:calc(100% - 24px);"></div></div>
+            </div>
+        </div>
+        <div class="fs-bot">
+            <span style="color:#00ff88;font-size:12px;white-space:nowrap;">● 系统正常</span>
+            <div id="fs-recent" style="font-size:11px;color:rgba(255,255,255,0.4);display:flex;gap:18px;overflow:hidden;"></div>
+            <span style="margin-left:auto;color:rgba(255,255,255,0.2);font-size:11px;white-space:nowrap;">{{ username }} · 指挥中心</span>
+        </div>
+    </div>
+    <div id="fs-hint" class="fs-hint">按 ESC 退出全屏</div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+<script>
+var A = {};
+var F = {};
+
+function mkEarth() {
+    var c = document.createElement('canvas'); c.width = 2048; c.height = 1024;
+    var ctx = c.getContext('2d');
+    var g = ctx.createRadialGradient(1024,380,80,1024,512,1700);
+    g.addColorStop(0,'#3a9fd8'); g.addColorStop(0.3,'#1e6db5'); g.addColorStop(0.6,'#0f3d6e'); g.addColorStop(1,'#051a33');
+    ctx.fillStyle = g; ctx.fillRect(0,0,2048,1024);
+    [[160,150,200,300],[220,110,230,380],[130,240,160,220],[520,190,380,440],
+     [580,240,300,380],[620,380,240,240],[860,150,440,520],[890,240,370,400],
+     [960,400,290,290],[1040,550,200,200],[720,650,160,140],[1220,650,140,150],
+     [1440,450,150,120],[140,550,150,140],[320,790,80,65],[1700,340,120,130],
+     [1540,520,90,80],[1180,880,230,150],[620,820,100,80],[820,810,70,60],
+     [500,810,60,70],[1050,810,80,60]].forEach(function(s){ctx.beginPath();
+     ctx.ellipse(s[0],s[1],s[2]/2,s[3]/2,0,0,Math.PI*2);ctx.fillStyle='#3a9e5a';ctx.fill();
+     ctx.beginPath();ctx.ellipse(s[0]+15,s[1]-10,s[2]/10,s[3]/10,0,0,Math.PI*2);ctx.fillStyle='#4cb868';ctx.fill();});
+    for(var i=0;i<600;i++){ctx.fillStyle='rgba('+Math.floor(Math.random()*30+20)+','+Math.floor(Math.random()*50+30)+','+Math.floor(Math.random()*30+10)+',0.35)';
+     ctx.beginPath();ctx.arc(Math.random()*2048,Math.random()*1024,Math.random()*1.8+0.3,0,Math.PI*2);ctx.fill();}
+    return c;
+}
+
+var _earthTex = null;
+function loadEarthTex(cb) {
+    if (_earthTex) { cb(_earthTex); return; }
+    var img = new Image();
+    img.onload = function() { _earthTex = img; cb(img); };
+    img.onerror = function() { _earthTex = mkEarth(); cb(_earthTex); };
+    img.src = '/admin/sentiment/api/earth-texture';
+}
+
+var CITIES = [[116.4,39.9,'北京'],[121.5,31.2,'上海'],[113.3,23.1,'广州'],[114.1,22.5,'深圳'],
+    [104.1,30.6,'成都'],[114.3,30.6,'武汉'],[120.2,30.3,'杭州'],[118.8,32.1,'南京'],
+    [-0.1,51.5,'伦敦'],[-74.0,40.7,'纽约'],[139.7,35.7,'东京'],[151.2,-33.9,'悉尼'],
+    [2.35,48.86,'巴黎'],[37.62,55.75,'莫斯科'],[55.27,25.2,'迪拜'],[103.82,1.35,'新加坡']];
+
+function globeOpt(tex) {
+    return {
+        globe:{ baseTexture:tex, shading:'lambert', light:{ambient:{intensity:1.8},main:{intensity:1.2}},
+            viewControl:{autoRotate:true,autoRotateSpeed:1.5,targetCoord:[116.4,39.9]},
+            atmosphere:{show:true,color:'#4a9eff',offset:4,glowPower:4},
+            postEffect:{enable:true,bloom:{enable:false}},temporalSuperSampling:{enable:true} },
+        series: CITIES.map(function(c){return {type:'scatter3D',coordinateSystem:'globe',symbolSize:8,
+            itemStyle:{color:'#00e5ff',opacity:0.9},
+            label:{show:true,formatter:'{b}',position:'right',distance:6,fontSize:10,color:'#fff',textBorderColor:'#000',textBorderWidth:2},
+            emphasis:{itemStyle:{color:'#ffea00',borderColor:'#fff',borderWidth:1.5},label:{fontSize:14,fontWeight:'bold',distance:10}},
+            data:[{name:c[2],value:[c[0],c[1],0]}] };})
+    };
+}
+
+function initMainGlobe() {
+    var d = document.getElementById('c-globe'); if(!d) return;
+    if(A.globe){A.globe.dispose();} A.globe = echarts.init(d);
+    loadEarthTex(function(tex) { A.globe.setOption(globeOpt(tex)); });
+}
+function initMainActive() {
+    var d = document.getElementById('c-active'); if(!d) return;
+    if(A.active)A.active.dispose(); A.active = echarts.init(d);
+    var days=[]; for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);days.push((dd.getMonth()+1)+'/'+dd.getDate());}
+    A.active.setOption({tooltip:{trigger:'axis'},legend:{data:['消息数','用户数'],bottom:0,textStyle:{color:'rgba(255,255,255,0.4)',fontSize:10}},
+        grid:{left:45,right:45,top:10,bottom:35},
+        xAxis:{type:'category',data:days,axisLine:{lineStyle:{color:'rgba(255,255,255,0.1)'}},axisLabel:{color:'rgba(255,255,255,0.3)',fontSize:10}},
+        yAxis:[{type:'value',name:'消息',nameTextStyle:{color:'rgba(255,255,255,0.3)',fontSize:10},splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}},axisLabel:{color:'rgba(255,255,255,0.25)',fontSize:10}},
+               {type:'value',name:'用户',nameTextStyle:{color:'rgba(255,255,255,0.3)',fontSize:10},splitLine:{show:false},axisLabel:{color:'rgba(255,255,255,0.25)',fontSize:10}}],
+        series:[{name:'消息数',type:'bar',data:[0,0,0,0,0,0,0],itemStyle:{color:'#00d4ff',borderRadius:[4,4,0,0]},barWidth:'50%'},
+                {name:'用户数',type:'line',yAxisIndex:1,data:[0,0,0,0,0,0,0],symbol:'circle',symbolSize:6,lineStyle:{width:2,color:'#00ff88'},itemStyle:{color:'#00ff88'}}]});
+}
+function initMainKW() {
+    var d = document.getElementById('c-kw'); if(!d) return;
+    if(A.kw)A.kw.dispose(); A.kw = echarts.init(d);
+    A.kw.setOption({tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+        grid:{left:85,right:20,top:5,bottom:5},
+        xAxis:{type:'value',axisLine:{show:false},axisTick:{show:false},splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}},axisLabel:{color:'rgba(255,255,255,0.3)',fontSize:10}},
+        yAxis:{type:'category',data:[],inverse:true,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'rgba(255,255,255,0.5)',fontSize:11}},
+        series:[{type:'bar',data:[],itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'rgba(255,170,0,0.3)'},{offset:1,color:'#ffaa00'}]),borderRadius:[0,3,3,0]},barWidth:'60%'}]});
+}
+function initMainModel() {
+    var d = document.getElementById('c-model'); if(!d) return;
+    if(A.modelA)A.modelA.dispose(); A.modelA = echarts.init(d);
+    A.modelA.setOption({tooltip:{trigger:'item',formatter:'{b}: {c} 次 ({d}%)'},
+        series:[{type:'pie',radius:['40%','68%'],center:['50%','50%'],itemStyle:{borderRadius:4,borderColor:'#080e1a',borderWidth:2},
+            label:{color:'rgba(255,255,255,0.6)',formatter:'{b}\n{d}%',fontSize:10},
+            labelLine:{lineStyle:{color:'rgba(255,255,255,0.12)'}},
+            data:[{value:1,name:'加载中',itemStyle:{color:'rgba(170,100,255,0.3)'}}]}]});
+}
+function initMainWC() {
+    var d = document.getElementById('c-wc'); if(!d) return;
+    if(A.wc)A.wc.dispose(); A.wc = echarts.init(d);
+    A.wc.setOption({series:[{type:'wordCloud',shape:'circle',sizeRange:[12,36],rotationRange:[-30,30],gridSize:8,drawOutOfBound:false,
+        textStyle:{fontFamily:'Microsoft YaHei',fontWeight:'bold',color:function(){var cs=['#00d4ff','#00ff88','#ff5078','#ffaa00','#aa64ff'];return cs[Math.floor(Math.random()*cs.length)];}},
+        data:[{name:'加载中',value:30}]}]});
+}
+
+function loadData() {
+    fetch('/admin/sentiment/api/stats').then(function(r){return r.json();}).then(function(resp){
+        if(!resp.success) return; var d = resp.data;
+        document.getElementById('s0').textContent=d.total_users||0;
+        document.getElementById('s1').textContent=d.total_conversations||0;
+        document.getElementById('s2').textContent=d.total_watch||0;
+        document.getElementById('s3').textContent=d.total_models||0;
+        document.getElementById('s4').textContent=d.total_analyses||0;
+        document.getElementById('s5').textContent=d.high_risk||0;
+        if(A.active&&d.user_activity)A.active.setOption({xAxis:{data:d.user_activity.days},series:[{data:d.user_activity.messages},{data:d.user_activity.users}]});
+        if(A.kw&&d.top_keywords){var kwNames=d.top_keywords.map(function(k){return k.keyword;});var kwVals=d.top_keywords.map(function(k){return k.count;});A.kw.setOption({yAxis:{data:kwNames},series:[{data:kwVals}]});}
+        if(A.modelA&&d.model_usage){var colors=['#aa64ff','#00d4ff','#00ff88','#ffaa00','#ff5078','#4fc3f7','#ff8a65','#69f0ae'];var md=d.model_usage.map(function(m,i){return {value:m.count,name:m.name,itemStyle:{color:colors[i%colors.length]}};});A.modelA.setOption({series:[{data:md.length?md:[{value:1,name:'暂无数据',itemStyle:{color:'rgba(170,100,255,0.2)'}}]}]});}
+        if(A.wc){var wd=[]; if(d.recent_keywords&&d.recent_keywords.length){var freq={};d.recent_keywords.join(',').split(',').forEach(function(w){w=w.trim();if(w)freq[w]=(freq[w]||0)+1;});var maxF=Math.max.apply(null,Object.values(freq))||1;Object.keys(freq).forEach(function(k){wd.push({name:k,value:Math.round(freq[k]/maxF*100)});});}if(!wd.length)wd=[{name:'暂无数据',value:30}];A.wc.setOption({series:[{data:wd}]});}
+    });
+}
+function loadRecent() {
+    var el = document.getElementById('c-recent');
+    fetch('/admin/sentiment/api/analyses?page=1').then(function(r){return r.json();}).then(function(resp){
+        if(resp.success&&resp.data.length){var bgc={low:'rgba(0,255,136,0.1)',medium:'rgba(255,170,0,0.1)',high:'rgba(255,50,50,0.1)'},cl={low:'#00ff88',medium:'#ffaa00',high:'#ff4444'};
+        el.innerHTML=resp.data.slice(0,8).map(function(a){return'<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);"><span style="background:'+(bgc[a.risk_level]||'rgba(255,255,255,0.05)')+';color:'+(cl[a.risk_level]||'#888')+';padding:1px 8px;border-radius:4px;font-size:11px;margin-right:8px;">'+(a.risk_level||'?')+'</span><span style="color:rgba(255,255,255,0.6);">'+a.title+'</span><span style="float:right;font-size:11px;color:rgba(255,255,255,0.25);">'+a.create_at+'</span></div>';}).join('');}else{el.innerHTML='<div style="padding:8px;text-align:center;color:rgba(255,255,255,0.2);">暂无分析记录</div>';}});
+}
+function clock() { var n=new Date(),el=document.getElementById('dash-clock');if(el)el.textContent=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0')+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0'); }
+
+function enterFS() {
+    document.getElementById('fs-overlay').style.display='block';
+    document.querySelector('.sidebar').style.display='none';
+    document.querySelector('.header').style.display='none';
+    document.querySelector('.main-content').style.marginLeft='0';
+    document.querySelector('.main-content').style.marginTop='0';
+    var fsEl = document.getElementById('fs-overlay');
+    if (fsEl.requestFullscreen) { fsEl.requestFullscreen(); }
+    else if (fsEl.webkitRequestFullscreen) { fsEl.webkitRequestFullscreen(); }
+    else if (fsEl.msRequestFullscreen) { fsEl.msRequestFullscreen(); }
+    var h=document.getElementById('fs-hint');h.style.display='block';h.style.animation='none';h.offsetHeight;h.style.animation='hintFade 3s ease-out forwards';
+    setTimeout(function(){h.style.display='none';},3000);
+    initFS();
+    var n=new Date(),el=document.getElementById('fs-clock');
+    var tid=setInterval(function(){var nn=new Date();if(el)el.textContent=nn.getFullYear()+'-'+String(nn.getMonth()+1).padStart(2,'0')+'-'+String(nn.getDate()).padStart(2,'0')+' '+String(nn.getHours()).padStart(2,'0')+':'+String(nn.getMinutes()).padStart(2,'0')+':'+String(nn.getSeconds()).padStart(2,'0');},1000);
+    F._tid = tid;
+    copyFS();
+}
+function exitFS() {
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if (document.webkitFullscreenElement) { document.webkitExitFullscreen(); }
+    else { cleanupFS(); }
+}
+function cleanupFS() {
+    document.getElementById('fs-overlay').style.display='none';
+    Object.keys(F).forEach(function(k){if(F[k]&&typeof F[k].dispose==='function'){F[k].dispose();delete F[k];}});
+    if(F._tid)clearInterval(F._tid);
+    document.querySelector('.sidebar').style.display='';
+    document.querySelector('.header').style.display='';
+    document.querySelector('.main-content').style.marginLeft='220px';
+    document.querySelector('.main-content').style.marginTop='60px';
+}
+
+function initFS() {
+    var d0=document.getElementById('fs-globe'); if(d0){if(F.globe)F.globe.dispose();F.globe=echarts.init(d0);loadEarthTex(function(tex){F.globe.setOption(globeOpt(tex));});}
+    var d1=document.getElementById('fs-active'); if(d1){if(F.active)F.active.dispose();F.active=echarts.init(d1);var ad=[0,0,0,0,0,0,0],ud=[0,0,0,0,0,0,0],days=[];for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);days.push((dd.getMonth()+1)+'/'+dd.getDate());}if(A.active){var o=A.active.getOption();if(o){if(o.xAxis&&o.xAxis[0].data)days=o.xAxis[0].data;if(o.series){ad=o.series[0].data;ud=o.series[1].data;}}}F.active.setOption({tooltip:{trigger:'axis'},legend:{data:['消息数','用户数'],bottom:0,textStyle:{color:'rgba(255,255,255,0.4)',fontSize:9}},grid:{left:45,right:45,top:10,bottom:30},xAxis:{type:'category',data:days,axisLine:{lineStyle:{color:'rgba(255,255,255,0.1)'}},axisLabel:{color:'rgba(255,255,255,0.3)',fontSize:9}},yAxis:[{type:'value',splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}},axisLabel:{color:'rgba(255,255,255,0.25)',fontSize:9}},{type:'value',splitLine:{show:false},axisLabel:{color:'rgba(255,255,255,0.25)',fontSize:9}}],series:[{name:'消息数',type:'bar',data:ad,itemStyle:{color:'#00d4ff',borderRadius:[4,4,0,0]},barWidth:'50%'},{name:'用户数',type:'line',yAxisIndex:1,data:ud,symbol:'circle',symbolSize:5,lineStyle:{width:2,color:'#00ff88'},itemStyle:{color:'#00ff88'}}]});}
+    var d2=document.getElementById('fs-kw'); if(d2){if(F.kw)F.kw.dispose();F.kw=echarts.init(d2);var kn=[],kv=[];if(A.kw){var o=A.kw.getOption();if(o){if(o.yAxis&&o.yAxis[0].data)kn=o.yAxis[0].data;if(o.series&&o.series[0].data)kv=o.series[0].data;}}F.kw.setOption({tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},grid:{left:75,right:15,top:5,bottom:5},xAxis:{type:'value',axisLine:{show:false},axisTick:{show:false},splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}},axisLabel:{color:'rgba(255,255,255,0.3)',fontSize:9}},yAxis:{type:'category',data:kn,inverse:true,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'rgba(255,255,255,0.5)',fontSize:10}},series:[{type:'bar',data:kv,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'rgba(255,170,0,0.3)'},{offset:1,color:'#ffaa00'}]),borderRadius:[0,3,3,0]},barWidth:'60%'}]});}
+    var d3=document.getElementById('fs-model'); if(d3){if(F.modelA)F.modelA.dispose();F.modelA=echarts.init(d3);var md=[{value:1,name:'加载中',itemStyle:{color:'rgba(170,100,255,0.2)'}}];if(A.modelA){var o=A.modelA.getOption();if(o&&o.series&&o.series[0].data&&o.series[0].data.length)md=o.series[0].data;}F.modelA.setOption({tooltip:{trigger:'item',formatter:'{b}: {c} 次 ({d}%)'},series:[{type:'pie',radius:['35%','62%'],center:['50%','50%'],itemStyle:{borderRadius:4,borderColor:'#080e1a',borderWidth:2},label:{color:'rgba(255,255,255,0.55)',formatter:'{b}\n{d}%',fontSize:9},labelLine:{lineStyle:{color:'rgba(255,255,255,0.1)'}},data:md}]});}
+    var d4=document.getElementById('fs-wc'); if(d4){if(F.wc)F.wc.dispose();F.wc=echarts.init(d4);var wcd=[{name:'加载中',value:30}];if(A.wc){var o=A.wc.getOption();if(o&&o.series&&o.series[0].data)wcd=o.series[0].data;}F.wc.setOption({series:[{type:'wordCloud',shape:'circle',sizeRange:[10,30],rotationRange:[-20,20],gridSize:7,drawOutOfBound:false,textStyle:{fontFamily:'Microsoft YaHei',fontWeight:'bold',color:function(){var cs=['#00d4ff','#00ff88','#ff5078','#ffaa00','#aa64ff'];return cs[Math.floor(Math.random()*cs.length)];}},data:wcd}]});}
+}
+function copyFS() {
+    document.getElementById('fs0').textContent=document.getElementById('s0').textContent;
+    document.getElementById('fs1').textContent=document.getElementById('s1').textContent;
+    document.getElementById('fs2').textContent=document.getElementById('s2').textContent;
+    document.getElementById('fs3').textContent=document.getElementById('s4').textContent;
+    document.getElementById('fs4').textContent=document.getElementById('s5').textContent;
+    var src=document.getElementById('c-recent'),dst=document.getElementById('fs-recent');
+    if(src&&dst&&src.innerHTML&&!src.innerHTML.includes('加载中')&&!src.innerHTML.includes('暂无'))dst.innerHTML=src.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+    clock();setInterval(clock,1000);
+    initMainActive();initMainKW();initMainModel();initMainWC();
+    initMainGlobe();
+    loadData();loadRecent();
+    document.addEventListener('fullscreenchange', function(){
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) { cleanupFS(); }
+    });
+    document.addEventListener('webkitfullscreenchange', function(){
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) { cleanupFS(); }
+    });
+});
+</script>
+<style>@keyframes hintFade{0%{opacity:0;transform:translate(-50%,-50%) scale(0.8)}15%{opacity:1;transform:translate(-50%,-50%) scale(1)}70%{opacity:1}100%{opacity:0}}</style>
+{% end %}

@@ -99,6 +99,9 @@ def init_db():
             (8, '数据仓库', 'watch_data', 'fas fa-database', '/admin/watch/data', None, 8, 1),
             (9, '接口管理', 'api_interfaces', 'fas fa-plug', '/admin/api-interfaces', None, 9, 1),
             (10, '数字员工', 'digital_employees', 'fas fa-robot', '/admin/digital-employees', None, 10, 1),
+            (11, '智慧舆情', 'sentiment', 'fas fa-chart-pie', None, None, 11, 1),
+            (12, '数智大屏', 'sentiment_dashboard', 'fas fa-globe', '/admin/sentiment/dashboard', 11, 1, 1),
+            (13, '智能舆情', 'sentiment_analysis', 'fas fa-brain', '/admin/sentiment/analysis', 11, 2, 1),
         ]
         for func in default_functions:
             conn.execute(
@@ -422,6 +425,43 @@ def init_db():
                 content TEXT NOT NULL,
                 msg_type TEXT DEFAULT 'text',
                 extra TEXT DEFAULT NULL,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
+
+        # 智慧舆情分析记录表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sentiment_analysis(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                analysis_type TEXT NOT NULL DEFAULT 'comprehensive',
+                data_source TEXT DEFAULT NULL,
+                prompt TEXT DEFAULT NULL,
+                result TEXT DEFAULT NULL,
+                risk_level TEXT DEFAULT 'low',
+                risk_score REAL DEFAULT 0,
+                keywords TEXT DEFAULT NULL,
+                summary TEXT DEFAULT NULL,
+                status TEXT DEFAULT 'completed',
+                model_used TEXT DEFAULT NULL,
+                tokens_used INTEGER DEFAULT 0,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
+
+        # 智慧舆情报告表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sentiment_reports(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                analysis_id INTEGER,
+                report_type TEXT NOT NULL DEFAULT 'daily',
+                title TEXT NOT NULL,
+                content TEXT DEFAULT NULL,
+                chart_data TEXT DEFAULT NULL,
                 create_at TEXT NOT NULL DEFAULT (datetime('now'))
             )
             """

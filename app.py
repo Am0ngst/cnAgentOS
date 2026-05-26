@@ -56,6 +56,13 @@ from app.controllers.user_chat import (
     UserConversationDeleteHandler,
     UserModelListHandler, UserEmployeeListHandler
 )
+from app.controllers.sentiment import (
+    SentimentDashboardHandler, SentimentStatsHandler,
+    SentimentAnalysisPageHandler, SentimentAnalysisListHandler,
+    SentimentAnalysisDeleteHandler, SentimentAIAnalyzeHandler,
+    EarthTextureProxyHandler,
+    SentimentChatDataHandler, SentimentWatchDataHandler
+)
 #引入db - model层
 from app.models.db import init_db
 
@@ -164,6 +171,16 @@ def make_app():
         (r"/admin/watch/deep-crawl/batch", DeepCrawlBatchHandler),
         (r"/admin/watch/deep-crawl/stats", DeepCrawlStatsHandler),
         (r"/admin/watch/deep-crawl/detail", DeepCrawlDetailHandler),
+        # 智慧舆情路由
+        (r"/admin/sentiment/dashboard", SentimentDashboardHandler),
+        (r"/admin/sentiment/api/stats", SentimentStatsHandler),
+        (r"/admin/sentiment/analysis", SentimentAnalysisPageHandler),
+        (r"/admin/sentiment/api/analyses", SentimentAnalysisListHandler),
+        (r"/admin/sentiment/api/analysis-delete", SentimentAnalysisDeleteHandler),
+        (r"/admin/sentiment/api/analyze", SentimentAIAnalyzeHandler),
+        (r"/admin/sentiment/api/earth-texture", EarthTextureProxyHandler),
+        (r"/admin/sentiment/api/chat-data", SentimentChatDataHandler),
+        (r"/admin/sentiment/api/watch-data", SentimentWatchDataHandler),
         # 用户侧路由
         (r"/user/login", UserLoginHandler),
         (r"/user/register", UserRegisterHandler),
