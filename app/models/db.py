@@ -32,7 +32,159 @@ def init_db():
             )
             """
         )
+
+        # IM 好友关系表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS im_contacts(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                contact_id INTEGER NOT NULL,
+                remark TEXT DEFAULT NULL,
+                create_at TEXT NOT NULL DEFAULT (datetime('now')),
+                UNIQUE(user_id, contact_id)
+            )
+            """
+        )
+
+        # IM 好友请求表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS im_friend_requests(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                from_user_id INTEGER NOT NULL,
+                to_user_id INTEGER NOT NULL,
+                message TEXT DEFAULT NULL,
+                status TEXT DEFAULT 'pending',
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
+
+        # IM 群组表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS im_groups(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                avatar TEXT DEFAULT NULL,
+                owner_id INTEGER NOT NULL,
+                announcement TEXT DEFAULT NULL,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
+
+        # IM 群成员表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS im_group_members(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                group_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                role TEXT DEFAULT 'member',
+                nickname TEXT DEFAULT NULL,
+                join_at TEXT NOT NULL DEFAULT (datetime('now')),
+                UNIQUE(group_id, user_id)
+            )
+            """
+        )
+
+        # IM 私聊消息表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS im_messages(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                from_user_id INTEGER NOT NULL,
+                to_user_id INTEGER NOT NULL,
+                msg_type TEXT DEFAULT 'text',
+                content TEXT DEFAULT NULL,
+                file_name TEXT DEFAULT NULL,
+                file_size INTEGER DEFAULT 0,
+                file_path TEXT DEFAULT NULL,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
+
+        # IM 群聊消息表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS im_group_messages(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                group_id INTEGER NOT NULL,
+                from_user_id INTEGER NOT NULL,
+                msg_type TEXT DEFAULT 'text',
+                content TEXT DEFAULT NULL,
+                file_name TEXT DEFAULT NULL,
+                file_size INTEGER DEFAULT 0,
+                file_path TEXT DEFAULT NULL,
+                at_employee TEXT DEFAULT NULL,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
         
+        # 数据库迁移：为消息表添加撤回标记字段
+        try:
+            conn.execute("ALTER TABLE im_messages ADD COLUMN is_recalled INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE im_group_messages ADD COLUMN is_recalled INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE im_messages ADD COLUMN emp_alias TEXT DEFAULT NULL")
+        except Exception:
+            pass
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS im_chat_servers(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                host TEXT NOT NULL,
+                port INTEGER NOT NULL DEFAULT 10086,
+                is_active INTEGER DEFAULT 0,
+                max_connections INTEGER DEFAULT 1000,
+                description TEXT DEFAULT NULL,
+                status INTEGER DEFAULT 1,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS im_group_announcements(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                group_id INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                from_admin TEXT NOT NULL DEFAULT 'system',
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS im_group_bans(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                group_id INTEGER NOT NULL,
+                reason TEXT DEFAULT NULL,
+                ban_type TEXT NOT NULL DEFAULT 'mute_all',
+                is_active INTEGER DEFAULT 1,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS ai_tools(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                code TEXT NOT NULL UNIQUE,
+                tool_type TEXT NOT NULL DEFAULT 'api',
+                description TEXT DEFAULT NULL,
+                config TEXT DEFAULT NULL,
+                employee_id INTEGER DEFAULT NULL,
+                status INTEGER DEFAULT 1,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+
         # 功能模块表（菜单）
         conn.execute(
             """
@@ -99,6 +251,13 @@ def init_db():
             (8, '数据仓库', 'watch_data', 'fas fa-database', '/admin/watch/data', None, 8, 1),
             (9, '接口管理', 'api_interfaces', 'fas fa-plug', '/admin/api-interfaces', None, 9, 1),
             (10, '数字员工', 'digital_employees', 'fas fa-robot', '/admin/digital-employees', None, 10, 1),
+            (11, '系统管理', 'system_mgmt', 'fas fa-cog', None, None, 3, 1),
+            (12, '数据采集', 'data_collect', 'fas fa-satellite-dish', None, None, 7, 1),
+            (13, '智能聊天', 'im_chat', 'fas fa-comments', None, None, 11, 1),
+            (14, '群管理', 'im_groups', 'fas fa-users', '/admin/im/groups', 13, 1, 1),
+            (15, '文件管理', 'im_files', 'fas fa-folder', '/admin/im/files', 13, 2, 1),
+            (16, '服务器管理', 'im_servers', 'fas fa-server', '/admin/im/servers', 13, 3, 1),
+            (17, '工具管理', 'im_tools', 'fas fa-tools', '/admin/im/tools', 13, 4, 1),
         ]
         for func in default_functions:
             conn.execute(
@@ -108,6 +267,9 @@ def init_db():
                 """,
                 func
             )
+        conn.execute("UPDATE functions SET parent_id = 11 WHERE id IN (3, 4, 5)")
+        conn.execute("UPDATE functions SET parent_id = 12 WHERE id IN (7, 8)")
+        conn.execute("UPDATE functions SET parent_id = 13 WHERE id IN (14, 15, 16, 17)")
         
         # 为超级管理员分配所有权限
         conn.execute(

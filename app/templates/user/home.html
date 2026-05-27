@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cnAgentOS</title>
+<link rel="stylesheet" href="{{ static_url('bootstrap-5.3.8-dist/css/bootstrap.min.css') }}">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .home-container {
+        text-align: center; padding: 40px;
+    }
+    .home-container h1 {
+        color: white; font-size: 32px; margin-bottom: 8px; font-weight: 300;
+    }
+    .home-container .subtitle {
+        color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 50px;
+    }
+    .app-cards {
+        display: flex; gap: 32px; justify-content: center; flex-wrap: wrap;
+    }
+    .app-card {
+        width: 240px; background: white; border-radius: 20px; padding: 40px 24px;
+        text-decoration: none; color: #333; transition: all 0.3s;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        cursor: pointer;
+    }
+    .app-card:hover {
+        transform: translateY(-6px); box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        color: #333;
+    }
+    .app-card .card-icon {
+        width: 80px; height: 80px; border-radius: 22px;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 20px; font-size: 36px; color: white;
+    }
+    .card-icon.ask { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .card-icon.im { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    .app-card h3 { font-size: 18px; margin-bottom: 8px; font-weight: 600; }
+    .app-card p { font-size: 13px; color: #999; margin: 0; line-height: 1.6; }
+    .user-info {
+        position: absolute; top: 24px; right: 32px; color: white;
+        display: flex; align-items: center; gap: 12px; font-size: 14px;
+    }
+    .user-info .logout-btn {
+        color: rgba(255,255,255,0.7); cursor: pointer; text-decoration: none; font-size: 13px;
+    }
+    .user-info .logout-btn:hover { color: white; }
+</style>
+</head>
+<body>
+<div class="user-info">
+    <span>👤 {{ user['username'] }}</span>
+    <form method="post" action="/user/logout" style="display:inline">
+        {% raw xsrf_form_html() %}
+        <a href="#" onclick="this.parentElement.submit()" class="logout-btn">退出</a>
+    </form>
+</div>
+<div class="home-container">
+    <h1>cnAgentOS</h1>
+    <p class="subtitle">智能瞭望与智能问数系统</p>
+    <div class="app-cards">
+        <a href="/user/chat" class="app-card">
+            <div class="card-icon ask">🔍</div>
+            <h3>智能问数</h3>
+            <p>AI 驱动的智能对话与数据查询分析系统</p>
+        </a>
+        <a href="/user/im" class="app-card">
+            <div class="card-icon im">💬</div>
+            <h3>智能聊天</h3>
+            <p>仿微信即时通信，好友私聊 · 群聊 · 数字员工</p>
+        </a>
+    </div>
+</div>
+</body>
+</html>

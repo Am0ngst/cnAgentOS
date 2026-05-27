@@ -51,10 +51,26 @@ from app.controllers.deep_crawl import (
 )
 from app.controllers.user_chat import (
     UserLoginHandler, UserRegisterHandler, UserLogoutHandler,
-    UserChatHandler, UserChatSSEHandler,
+    UserChatHandler, UserChatSSEHandler, UserHomeHandler,
     UserConversationListHandler, UserConversationMessagesHandler,
     UserConversationDeleteHandler,
     UserModelListHandler, UserEmployeeListHandler
+)
+from app.controllers.im_controller import (
+    IMIndexHandler, IMContactListHandler, IMContactRemoveHandler, IMUserSearchHandler,
+    IMFriendRequestSendHandler, IMFriendRequestListHandler, IMFriendRequestHandleHandler,
+    IMGroupCreateHandler, IMGroupMembersHandler, IMGroupInviteHandler,
+    IMGroupLeaveHandler, IMGroupDisbandHandler, IMGroupTransferHandler, IMGroupRenameHandler,
+    IMPrivateChatSSEHandler, IMPrivatePollHandler,
+    IMGroupPollHandler, IMGroupChatSendHandler,
+    IMFileUploadHandler, IMFileDownloadHandler, IMEmployeeListHandler,
+    IMFriendRequestCountHandler, IMPrivateRecallHandler, IMGroupRecallHandler
+)
+from app.controllers.admin_im import (
+    IMGroupListPageHandler, IMGroupListAPIHandler, IMGroupMembersAPIHandler,
+    IMFilePageHandler, IMFileAPIHandler,
+    IMServerPageHandler, IMServerAPIHandler,
+    IMToolPageHandler, IMToolAPIHandler
 )
 #引入db - model层
 from app.models.db import init_db
@@ -168,6 +184,7 @@ def make_app():
         (r"/user/login", UserLoginHandler),
         (r"/user/register", UserRegisterHandler),
         (r"/user/logout", UserLogoutHandler),
+        (r"/user/home", UserHomeHandler),
         (r"/user/chat", UserChatHandler),
         (r"/user/chat/sse", UserChatSSEHandler),
         (r"/user/api/conversations", UserConversationListHandler),
@@ -175,6 +192,41 @@ def make_app():
         (r"/user/api/conversations/delete", UserConversationDeleteHandler),
         (r"/user/api/models", UserModelListHandler),
         (r"/user/api/employees", UserEmployeeListHandler),
+        # IM 智能聊天子系统路由
+        (r"/user/im", IMIndexHandler),
+        (r"/user/im/contacts", IMContactListHandler),
+        (r"/user/im/contact/remove", IMContactRemoveHandler),
+        (r"/user/im/search", IMUserSearchHandler),
+        (r"/user/im/friend-request/send", IMFriendRequestSendHandler),
+        (r"/user/im/friend-request/list", IMFriendRequestListHandler),
+        (r"/user/im/friend-request/handle", IMFriendRequestHandleHandler),
+        (r"/user/im/group/create", IMGroupCreateHandler),
+        (r"/user/im/group/members", IMGroupMembersHandler),
+        (r"/user/im/group/invite", IMGroupInviteHandler),
+        (r"/user/im/group/leave", IMGroupLeaveHandler),
+        (r"/user/im/group/disband", IMGroupDisbandHandler),
+        (r"/user/im/group/transfer", IMGroupTransferHandler),
+        (r"/user/im/group/rename", IMGroupRenameHandler),
+        (r"/user/im/private/chat", IMPrivateChatSSEHandler),
+        (r"/user/im/private/poll", IMPrivatePollHandler),
+        (r"/user/im/private/recall", IMPrivateRecallHandler),
+        (r"/user/im/group/poll", IMGroupPollHandler),
+        (r"/user/im/group/send", IMGroupChatSendHandler),
+        (r"/user/im/group/recall", IMGroupRecallHandler),
+        (r"/user/im/upload", IMFileUploadHandler),
+        (r"/user/im/files/(.*)", IMFileDownloadHandler),
+        (r"/user/im/employees", IMEmployeeListHandler),
+        (r"/user/im/friend-request/count", IMFriendRequestCountHandler),
+        # IM 后台管理路由
+        (r"/admin/im/groups", IMGroupListPageHandler),
+        (r"/admin/im/groups/api", IMGroupListAPIHandler),
+        (r"/admin/im/groups/members", IMGroupMembersAPIHandler),
+        (r"/admin/im/files", IMFilePageHandler),
+        (r"/admin/im/files/api", IMFileAPIHandler),
+        (r"/admin/im/servers", IMServerPageHandler),
+        (r"/admin/im/servers/api", IMServerAPIHandler),
+        (r"/admin/im/tools", IMToolPageHandler),
+        (r"/admin/im/tools/api", IMToolAPIHandler),
     ],
     **settings
     )

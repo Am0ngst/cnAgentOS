@@ -1,0 +1,120 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<style>
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.table td{vertical-align:middle}
+.actions .btn{margin-right:4px;padding:4px 10px;font-size:12px}
+.modal-backdrop.show{opacity:.5}
+</style>
+<div class="page-header">
+    <h4 class="mb-0"><i class="fas fa-comments me-2"></i>群聊管理</h4>
+    <div>
+        <input class="form-control form-control-sm d-inline-block" style="width:220px" id="kwInput" placeholder="搜索群名称..." onkeyup="if(event.key==='Enter')loadList()">
+        <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadList()">搜索</button>
+    </div>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light"><tr>
+            <th>ID</th><th>群名称</th><th>群主</th><th>创建时间</th><th>操作</th>
+        </tr></thead>
+        <tbody id="groupTbody"></tbody>
+    </table>
+</div>
+<div id="pager" class="text-end mt-3"></div>
+
+<div class="modal fade" id="membersModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5>群成员</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body" id="membersBody"></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="announceModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5>发送群公告</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <textarea class="form-control" id="announceContent" rows="4" placeholder="请输入公告内容..."></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button class="btn btn-primary" id="announceBtn" onclick="sendAnnounce()">发送公告</button>
+        </div>
+    </div></div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+var _currentGroupId = null;
+var _page = 1;
+
+function loadList(){
+    var kw = document.getElementById('kwInput').value;
+    fetch('/admin/im/groups/api?page='+_page+'&keyword='+encodeURIComponent(kw)).then(r=>r.json()).then(d=>{
+        var html = '';
+        (d.data||[]).forEach(function(g){
+            html += '<tr><td>'+g.id+'</td><td>'+h(g.name)+'</td><td>'+h(g.owner_name||'')+'</td><td>'+g.create_at+'</td>'+
+                '<td class="actions">'+
+                '<button class="btn btn-outline-info btn-sm" onclick="showMembers('+g.id+')">成员</button>'+
+                '<button class="btn btn-outline-warning btn-sm" onclick="showAnnounce('+g.id+')">公告</button>'+
+                '<button class="btn btn-outline-danger btn-sm" onclick="banGroup('+g.id+')">禁言</button>'+
+                '<button class="btn btn-danger btn-sm" onclick="disbandGroup('+g.id+')">解散</button></td></tr>';
+        });
+        document.getElementById('groupTbody').innerHTML = html || '<tr><td colspan="5" class="text-center text-muted">暂无群聊</td></tr>';
+        var total = d.total||0;
+        var pages = Math.ceil(total/20)||1;
+        var ph = '';
+        for(var i=1;i<=pages;i++){ph+='<button class="btn btn-sm '+(i===_page?'btn-primary':'btn-outline-primary')+' me-1" onclick="_page='+i+';loadList()">'+i+'</button>';}
+        document.getElementById('pager').innerHTML = ph;
+    });
+}
+
+function showMembers(gid){
+    fetch('/admin/im/groups/members?group_id='+gid).then(r=>r.json()).then(d=>{
+        var html = '';
+        (d.data||[]).forEach(function(m){
+            html += '<div class="d-flex align-items-center mb-2 py-1 border-bottom"><i class="fas fa-user-circle me-2 text-muted"></i><span>'+h(m.username)+'</span><span class="ms-auto badge '+(m.role==='owner'?'bg-warning':'bg-light text-dark')+'">'+m.role+'</span></div>';
+        });
+        document.getElementById('membersBody').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('membersModal')).show();
+    });
+}
+
+function showAnnounce(gid){
+    _currentGroupId = gid;
+    document.getElementById('announceContent').value = '';
+    new bootstrap.Modal(document.getElementById('announceModal')).show();
+}
+
+function sendAnnounce(){
+    var content = document.getElementById('announceContent').value.trim();
+    if(!content)return alert('请输入公告内容');
+    var f = new FormData();
+    f.append('action','announce');f.append('group_id',_currentGroupId);f.append('content',content);
+    fetch('/admin/im/groups/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);
+        bootstrap.Modal.getInstance(document.getElementById('announceModal')).hide();
+    });
+}
+
+function banGroup(gid){
+    if(!confirm('确定对该群执行禁言操作？'))return;
+    var f = new FormData();
+    f.append('action','ban');f.append('group_id',gid);f.append('reason','管理员操作');
+    fetch('/admin/im/groups/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
+}
+
+function disbandGroup(gid){
+    if(!confirm('确定解散该群聊？此操作不可恢复！'))return;
+    var f = new FormData();
+    f.append('action','disband');f.append('group_id',gid);
+    fetch('/admin/im/groups/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
+}
+
+function h(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+loadList();
+</script>
+{% end %}

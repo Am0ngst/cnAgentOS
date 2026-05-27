@@ -260,7 +260,7 @@
 
 {% block scripts %}
 <script>
-var _xsrf='',emps=[],currentEmp=null,chatHistory={};
+var _xsrf='',emps=[],currentEmp=null,chatHistory={},conversationIds={};
 
 document.addEventListener('DOMContentLoaded',()=>{
     var m=document.cookie.match('_xsrf=([^;]*)');
@@ -311,6 +311,7 @@ function renderSidebar(){
 }
 
 function selectEmp(alias){
+    var prevEmp = currentEmp;
     currentEmp=emps.find(e=>e.alias===alias);
     if(!currentEmp)return;
     document.querySelectorAll('.emp-item').forEach(i=>i.classList.remove('active'));
@@ -332,6 +333,7 @@ function selectEmp(alias){
             <p>向 @${alias} 发送消息</p>
             <small class="text-muted">${currentEmp.desc||''}</small>
         </div>`;
+        delete conversationIds[alias];
     }
     document.getElementById('chatInput').focus();
 }
@@ -399,11 +401,18 @@ function sendMessage(){
 function sendAIMessage(msg){
     showTyping();
     var xsrf=_xsrf;
-    var evt=new EventSource(`/admin/digital-chat/sse?_xsrf=${xsrf}&alias=${encodeURIComponent(currentEmp.alias)}&message=${encodeURIComponent(msg)}`);
+    var convId = conversationIds[currentEmp.alias] || '';
+    var url = `/admin/digital-chat/sse?_xsrf=${xsrf}&alias=${encodeURIComponent(currentEmp.alias)}&message=${encodeURIComponent(msg)}`;
+    if(convId) url += `&conversation_id=${convId}`;
+    var evt=new EventSource(url);
     var aiDiv=null;
     evt.onmessage=function(e){
         try{
             var d=JSON.parse(e.data);
+            if(d.conversation_id){
+                conversationIds[currentEmp.alias] = d.conversation_id;
+                return;
+            }
             if(d.error){removeTyping();appendMsg('assistant','错误: '+d.error);evt.close();return;}
             if(d.chunk){
                 removeTyping();

@@ -37,7 +37,7 @@ class DigitalEmployeeRepository:
             row = conn.execute(
                 """SELECT de.*,
                    am.name as model_name, am.model_name as model_code_name,
-                   ai.name as api_name, ai.url as api_url
+                   ai.name as api_name, ai.url as api_url, ai.code as api_code
                    FROM digital_employees de
                    LEFT JOIN ai_models am ON de.model_id = am.id
                    LEFT JOIN api_interfaces ai ON de.api_id = ai.id
