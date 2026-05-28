@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能聊天 - cnAgentOS</title>
+<link rel="stylesheet" href="{{ static_url('bootstrap-5.3.8-dist/css/bootstrap.min.css') }}">
+<link rel="stylesheet" href="{{ static_url('fontawesome-free-5.15.4-web/css/all.min.css') }}">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;height:100vh;overflow:hidden;background:#f5f5f5}
+.im-wrapper{display:flex;height:100vh}
+.im-sidebar{width:320px;background:#fff;border-right:1px solid #e0e0e0;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:12px 16px;background:#f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.sidebar-header .user-name{font-size:15px;font-weight:600}
+.sidebar-header .btn{font-size:12px}
+.sidebar-tabs{display:flex;border-bottom:2px solid #e0e0e0}
+.sidebar-tab{flex:1;text-align:center;padding:10px 0;font-size:13px;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.sidebar-tab.active{color:#07c160;border-bottom-color:#07c160;font-weight:600}
+.sidebar-tab:hover{color:#07c160}
+.sidebar-list{flex:1;overflow-y:auto}
+.contact-item{display:flex;align-items:center;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f5f5f5;transition:all .1s;gap:10px}
+.contact-item:hover{background:#f0f0f0}
+.contact-item.active{background:#e8f5e9}
+.contact-avatar{width:44px;height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;color:white;flex-shrink:0}
+.contact-avatar.c0{background:linear-gradient(135deg,#667eea,#764ba2)}
+.contact-avatar.c1{background:linear-gradient(135deg,#f093fb,#f5576c)}
+.contact-avatar.c2{background:linear-gradient(135deg,#4facfe,#00f2fe)}
+.contact-avatar.c3{background:linear-gradient(135deg,#43e97b,#38f9d7)}
+.contact-avatar.c4{background:linear-gradient(135deg,#fa709a,#fee140)}
+.contact-avatar.group{background:linear-gradient(135deg,#07c160,#00a854)}
+.contact-avatar.emp{background:linear-gradient(135deg,#ff9800,#f44336)}
+.contact-info{flex:1;min-width:0}
+.contact-info .contact-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-info .contact-preview{font-size:12px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge-count{background:#f44336;color:white;font-size:11px;border-radius:10px;padding:2px 7px;flex-shrink:0}
+
+.im-main{flex:1;display:flex;flex-direction:column}
+.im-chat-header{padding:14px 20px;background:#f0f0f0;border-bottom:1px solid #e0e0e0;display:flex;align-items:center;gap:12px}
+.im-chat-header h5{margin:0;font-size:16px}
+.im-chat-header .back-btn{display:none;font-size:18px;cursor:pointer;color:#666;margin-right:4px}
+.im-chat-messages{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:16px;background:#f5f5f5}
+
+.msg-row{display:flex;gap:10px;max-width:75%}
+.msg-row.me{flex-direction:row-reverse;align-self:flex-end}
+.msg-avatar{width:38px;height:38px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;color:white;flex-shrink:0}
+.msg-row.me .msg-avatar{background:linear-gradient(135deg,#667eea,#764ba2)}
+.msg-row.other .msg-avatar{background:linear-gradient(135deg,#43e97b,#38f9d7)}
+.msg-row.emp .msg-avatar{background:linear-gradient(135deg,#ff9800,#f44336)}
+.msg-bubble{padding:10px 14px;border-radius:8px;font-size:14px;line-height:1.6;word-break:break-word;position:relative}
+.msg-row.me .msg-bubble{background:#95ec69;color:#000}
+.msg-row.other .msg-bubble{background:#fff;color:#333}
+.msg-row.emp .msg-bubble{background:#fff3e0;color:#333;border:1px solid #ffcc80}
+.msg-row .msg-sender{font-size:11px;color:#999;margin-bottom:2px}
+.msg-row .msg-username{font-size:11px;color:#07c160;margin-bottom:2px}
+.msg-img{max-width:240px;max-height:240px;border-radius:8px;cursor:pointer}
+.msg-file{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f0f0f0;border-radius:6px;text-decoration:none;color:#333}
+.msg-file i{font-size:24px;color:#667eea}
+.msg-file span{font-size:13px}
+
+.msg-recall-system{text-align:center;padding:8px 0;color:#999;font-size:12px;width:100%;user-select:none}
+.context-menu{display:none;position:fixed;background:#fff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:9999;min-width:120px;overflow:hidden}
+.context-menu .menu-item{padding:10px 16px;cursor:pointer;font-size:13px;color:#333;transition:all .1s}
+.context-menu .menu-item:hover{background:#f0f0f0}
+.context-menu .menu-item.disabled{color:#ccc;cursor:not-allowed;pointer-events:none}
+
+.group-create-search{padding:12px 16px;position:sticky;top:0;background:#fff;z-index:2}
+.group-create-list{max-height:420px;overflow-y:auto}
+.group-create-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f5f5f5;transition:all .1s}
+.group-create-item:hover{background:#f8f8f8}
+.group-create-item .check-circle{width:22px;height:22px;border-radius:50%;border:2px solid #ddd;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;transition:all .2s}
+.group-create-item.selected .check-circle{border-color:#07c160;background:#07c160;color:white}
+.group-create-avatar{width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;color:white;flex-shrink:0}
+.group-create-info{flex:1;min-width:0}
+.group-create-info .gc-name{font-size:14px;font-weight:500}
+.group-create-info .gc-remark{font-size:12px;color:#999}
+.group-create-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid #e0e0e0;background:#fff}
+.group-create-bar .selected-count{font-size:14px;color:#888}
+.group-create-bar .done-btn{padding:8px 24px;border-radius:6px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.group-create-bar .done-btn.disabled{background:#e0e0e0;color:#bbb;cursor:not-allowed}
+.group-create-bar .done-btn.enabled{background:#07c160;color:white}
+
+.msg-system{text-align:center;padding:10px 0;color:#999;font-size:12px;user-select:none;width:100%}
+
+.toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;pointer-events:none}
+.toast-msg{background:rgba(0,0,0,.75);color:white;padding:10px 24px;border-radius:6px;font-size:14px;text-align:center;animation:toastIn .25s ease,toastOut .25s ease 1.7s forwards;white-space:nowrap}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0}}
+
+.group-info-header{text-align:center;padding:24px 16px 16px;border-bottom:1px solid #f0f0f0}
+.group-info-avatar{width:64px;height:64px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;color:white;margin:0 auto 10px}
+.group-info-name{font-size:17px;font-weight:600}
+.group-info-member-row{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #f5f5f5}
+.group-info-member-row .gi-avatar{width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;flex-shrink:0}
+.group-info-member-row .gi-name{font-size:14px}
+.group-info-member-row .gi-role{font-size:11px;color:#999;margin-left:6px}
+.group-info-invite-btn{padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer;color:#576b95;font-size:14px}
+.group-info-invite-btn:hover{background:#f8f8f8}
+
+.edit-name-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f5f5;z-index:99999;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s ease}
+.edit-name-overlay.show{transform:translateX(0)}
+.edit-name-header{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;background:#fff;border-bottom:1px solid #e0e0e0;flex-shrink:0}
+.edit-name-header .back-btn{color:#333;font-size:16px;cursor:pointer;padding:8px 0;background:none;border:none}
+.edit-name-header .title{font-size:17px;font-weight:600}
+.edit-name-header .done-btn{font-size:16px;padding:8px 0;cursor:pointer;background:none;border:none;color:#07c160;font-weight:500;transition:opacity .2s}
+.edit-name-header .done-btn.disabled{color:#bbb;pointer-events:none}
+.edit-name-body{padding:24px 16px}
+.edit-name-input{width:100%;height:48px;border:none;border-bottom:2px solid #07c160;font-size:16px;padding:0;outline:none;background:transparent}
+.edit-name-hint{font-size:12px;color:#999;margin-top:8px}
+
+.group-name-row{padding:12px 16px;border-bottom:1px solid #e8e8e8;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .1s;background:#fafbfc}
+.group-name-row:hover{background:#eef3f8}
+.group-name-row .gn-avatar{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;flex-shrink:0}
+.group-name-row .gn-info{flex:1;min-width:0}
+.group-name-row .gn-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.group-name-row .gn-hint{font-size:12px;color:#999}
+.group-name-row .gn-arrow{color:#ccc;font-size:14px}
+.group-name-row .gn-tag{display:inline-block;font-size:10px;color:#576b95;border:1px solid #576b95;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+
+.emp-badge{display:inline-block;font-size:9px;color:#07c160;border:1px solid #07c160;border-radius:2px;padding:0 3px;margin-left:4px;vertical-align:middle}
+.contact-avatar.bot{background:linear-gradient(135deg,#667eea,#764ba2)}
+.group-info-danger{text-align:center;padding:16px;font-size:14px;cursor:pointer;color:#888;margin-top:12px}
+.group-info-danger.red{color:#e0483a}
+.group-info-danger:hover{background:#fafafa}
+.group-info-section-label{font-size:12px;color:#aaa;padding:8px 16px 4px}
+
+.wx-confirm-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:center;justify-content:center}
+.wx-confirm-box{background:white;border-radius:12px;width:300px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.wx-confirm-title{padding:24px 16px 12px;text-align:center;font-size:17px;font-weight:600}
+.wx-confirm-body{padding:0 16px 24px;text-align:center;font-size:14px;color:#888;line-height:1.6}
+.wx-confirm-btns{border-top:1px solid #e0e0e0;display:flex}
+.wx-confirm-btns button{flex:1;padding:14px;border:none;background:none;font-size:16px;cursor:pointer;transition:all .1s}
+.wx-confirm-btns button:active{background:#eee}
+.wx-confirm-btns .btn-cancel{border-right:1px solid #e0e0e0;color:#333}
+.wx-confirm-btns .btn-danger{color:#e0483a;font-weight:600}
+
+.im-chat-input{border-top:1px solid #e0e0e0;background:#fff}
+.im-input-toolbar{display:flex;gap:4px;padding:8px 16px 0}
+.im-input-toolbar button{border:none;background:none;font-size:18px;color:#888;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .2s}
+.im-input-toolbar button:hover{color:#07c160;background:#f0f0f0}
+.emoji-picker{display:none;flex-wrap:wrap;gap:6px;padding:8px 16px;background:#f8f8f8;border-top:1px solid #eee;max-height:200px;overflow-y:auto}
+.emoji-picker.show{display:flex}
+.emoji-picker span{font-size:22px;cursor:pointer;padding:4px;border-radius:4px;transition:all .1s}
+.emoji-picker span:hover{background:#e0e0e0}
+.im-input-area{display:flex;align-items:flex-end;padding:8px 16px 12px;gap:8px}
+.im-input-area textarea{flex:1;border:1px solid #e0e0e0;border-radius:6px;padding:8px 12px;resize:none;outline:none;font-size:14px;line-height:1.5;min-height:40px;max-height:120px;font-family:inherit}
+.im-input-area textarea:focus{border-color:#07c160}
+.im-input-area .send-btn{width:40px;height:40px;border-radius:50%;background:#07c160;border:none;color:white;font-size:16px;cursor:pointer;flex-shrink:0;transition:all .2s}
+.im-input-area .send-btn:hover{background:#06ad56}
+#fileInput{display:none}
+
+.empty-chat{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#ccc}
+.empty-chat i{font-size:64px;margin-bottom:16px}
+.empty-chat p{font-size:15px}
+
+.modal-header{padding:12px 20px;background:#f0f0f0}
+.list-select-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f5f5f5;transition:all .1s}
+.list-select-item:hover{background:#f0f0f0}
+.list-select-item.selected{background:#e8f5e9}
+
+@media(max-width:768px){
+.im-sidebar{width:100%;position:absolute;z-index:10;height:100vh;display:flex}
+.im-sidebar.hidden{display:none}
+.im-chat-header .back-btn{display:block}
+}
+</style>
+</head>
+<body>
+<div class="im-wrapper" id="app"
+     data-user-id="{{ user['id'] }}"
+     data-username="{{ user['username'] }}"
+     data-friends='{% raw friends_json %}'
+     data-groups='{% raw groups_json %}'
+     data-emps='{% raw emps_json %}'>
+<div class="im-sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <span class="user-name">{{ user['username'] }}</span>
+        <div>
+            <a href="/user/home" class="btn btn-sm btn-outline-secondary me-1" title="返回主页"><i class="fas fa-home"></i></a>
+            <form method="post" action="/user/logout" style="display:inline">
+                {% raw xsrf_form_html() %}
+                <button class="btn btn-sm btn-outline-danger" title="退出"><i class="fas fa-sign-out-alt"></i></button>
+            </form>
+        </div>
+    </div>
+    <div class="sidebar-tabs">
+        <div class="sidebar-tab active" data-tab="private" onclick="switchTab('private')">私聊</div>
+        <div class="sidebar-tab" data-tab="group" onclick="switchTab('group')">群聊</div>
+        <div class="sidebar-tab" data-tab="contacts" onclick="switchTab('contacts')">通讯录</div>
+        <div class="sidebar-tab" data-tab="search" onclick="switchTab('search')">查找</div>
+        <div class="sidebar-tab" data-tab="employees" onclick="switchTab('employees')">数字员工</div>
+    </div>
+    <div class="sidebar-list" id="sidebarList"></div>
+</div>
+<div class="im-main" id="mainPanel">
+    <div class="im-chat-header" id="chatHeader">
+        <span class="back-btn" onclick="showSidebar()"><i class="fas fa-arrow-left"></i></span>
+        <div class="contact-avatar c0" style="width:36px;height:36px" id="chatAvatar"><i class="fas fa-comments"></i></div>
+        <h5 id="chatTitle">选择一个对话</h5>
+        <span class="badge bg-success" id="chatType" style="display:none"></span>
+        <button class="btn btn-sm btn-outline-secondary ms-auto" id="btnMembers" style="display:none;font-size:12px" onclick="showGroupMembers()"><i class="fas fa-users me-1"></i>成员</button>
+    </div>
+    <div class="im-chat-messages" id="chatMessages">
+        <div class="empty-chat"><i class="fas fa-comments"></i><p>选择一个好友或群组开始聊天</p></div>
+    </div>
+    <div class="im-chat-input" id="chatInputArea" style="display:none">
+        <div class="im-input-toolbar">
+            <button onclick="toggleEmoji()" title="表情"><i class="far fa-smile"></i></button>
+            <button onclick="document.getElementById('fileInput').click()" title="发送文件"><i class="fas fa-paperclip"></i></button>
+            <input type="file" id="fileInput" onchange="uploadFile(this)">
+        </div>
+        <div class="emoji-picker" id="emojiPicker"></div>
+        <div class="im-input-area">
+            <textarea id="chatInput" rows="1" placeholder="输入消息..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" style="height:40px"></textarea>
+            <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="modal fade" id="groupCreateModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">发起群聊</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="group-create-search"><input class="form-control" id="gcSearchInput" placeholder="搜索好友 / 备注" oninput="filterGroupCreateList()"></div>
+        <div class="group-create-list" id="groupCreateList"></div>
+        <div class="group-create-bar">
+            <span class="selected-count" id="gcSelectedCount">已选 0 人</span>
+            <button class="done-btn disabled" id="gcDoneBtn" onclick="createGroup()">完成</button>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="groupInviteModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">邀请成员</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="group-create-search"><input class="form-control" id="giSearchInput" placeholder="搜索好友" oninput="filterInviteList()"></div>
+        <div class="group-create-list" id="groupInviteList"></div>
+        <div class="group-create-bar">
+            <span class="selected-count" id="giSelectedCount">已选 0 人</span>
+            <button class="done-btn disabled" id="giDoneBtn" onclick="inviteMembers()">确定</button>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="groupMembersModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">群成员</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="group-create-list" id="groupMembersList" style="max-height:400px"></div>
+        <div class="p-3 border-top"><button class="btn btn-success btn-sm w-100 mb-2" onclick="showGroupInvite()"><i class="fas fa-plus me-1"></i>邀请成员</button></div>
+        <div class="px-3 pb-3" id="groupMembersActions"></div>
+    </div></div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="modal fade" id="friendModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">好友请求</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body" id="friendRequestList"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="groupTransferModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">选择新群主</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-0"><div id="groupTransferList" class="group-create-list" style="max-height:360px"></div></div>
+        <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button></div>
+    </div></div>
+</div>
+
+<div class="edit-name-overlay" id="editNameOverlay">
+    <div class="edit-name-header">
+        <button class="back-btn" onclick="closeEditName()"><i class="fas fa-chevron-left me-1"></i></button>
+        <span class="title">修改群名称</span>
+        <button class="done-btn disabled" id="editNameDone" onclick="saveGroupName()">完成</button>
+    </div>
+    <div class="edit-name-body">
+        <input class="edit-name-input" id="editNameInput" maxlength="30" oninput="onNameInput()" placeholder="请输入群名称">
+        <div class="edit-name-hint" id="editNameHint">0/30</div>
+    </div>
+</div>
+
+<div class="context-menu" id="contextMenu" onclick="event.stopPropagation()">
+    <div class="menu-item" id="menuRecall" onclick="recallMessage()">撤回</div>
+</div>
+
+<script src="{{ static_url('bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js') }}"></script>
+<script>
+var userId = parseInt(document.getElementById('app').dataset.userId);
+var username = document.getElementById('app').dataset.username;
+var _xsrf = document.cookie.match('_xsrf=([^;]*)')[1];
+var friends = JSON.parse(document.getElementById('app').dataset.friends);
+var groups = JSON.parse(document.getElementById('app').dataset.groups);
+var emps = JSON.parse(document.getElementById('app').dataset.emps);
+var currentTab = 'private';
+var chatPeer = null;
+var chatGroup = null;
+var lastPrivateMsgId = 0;
+var lastGroupMsgId = 0;
+var pollTimer = null;
+var renderedMsgIds = new Set();
+var contextMsgId = null;
+
+var EMOJIS = ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😪','😴','🥱','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥴','😤','😡','😠','🤬','💀','👻','👽','🤖','🎉','🎊','🎈','❤️','🧡','💛','💚','💙','💜','🖤','🤍','👍','👎','👏','🙌','🤝','💪','✌️','🤞','👌','🤙','👋','🖐️','✋'];
+
+function initEmojiPicker(){
+    var el = document.getElementById('emojiPicker');
+    el.innerHTML = EMOJIS.map(e => '<span onclick="insertEmoji(\''+e+'\')">'+e+'</span>').join('');
+}
+function toggleEmoji(){
+    document.getElementById('emojiPicker').classList.toggle('show');
+}
+function insertEmoji(emoji){
+    var el = document.getElementById('chatInput');
+    el.value += emoji;
+    el.focus();
+}
+
+function switchTab(tab){
+    currentTab = tab;
+    document.querySelectorAll('.sidebar-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+    renderSidebarList();
+}
+function showSidebar(){document.getElementById('sidebar').classList.remove('hidden')}
+function hideSidebar(){if(window.innerWidth<=768)document.getElementById('sidebar').classList.add('hidden')}
+
+function renderSidebarList(){
+    var el = document.getElementById('sidebarList');
+    el.innerHTML = '';
+    if(currentTab==='private'){
+        var empList = friends.filter(function(f){return f.is_employee});
+        var normalList = friends.filter(function(f){return !f.is_employee});
+        if(empList.length){
+            el.innerHTML += '<div style="padding:8px 16px;font-size:12px;color:#999">数字员工</div>';
+            empList.forEach(function(f,i){
+                el.innerHTML += '<div class="contact-item" onclick="openEmpChat(\''+f.username+'\',\''+escapeHtml(f.remark||f.username)+'\')" id="contact_'+f.id+'">'+
+                    '<div class="contact-avatar bot"><i class="fas fa-robot"></i></div>'+
+                    '<div class="contact-info"><div class="contact-name">'+escapeHtml(f.remark||f.username)+'<span class="emp-badge">员工</span></div><div class="contact-preview">@'+escapeHtml(f.username)+'</div></div></div>';
+            });
+            if(normalList.length) el.innerHTML += '<div style="padding:8px 16px;font-size:12px;color:#999">好友</div>';
+        }
+        if(!normalList.length&&!empList.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#ccc"><i class="fas fa-user-friends" style="font-size:36px;display:block;margin-bottom:12px"></i><span style="font-size:13px">暂无好友，去"查找"添加吧</span></div>';return}
+        normalList.forEach(function(f,i){
+            el.innerHTML += '<div class="contact-item" onclick="openPrivateChat('+f.id+',\''+escapeHtml(f.username)+'\','+i+')" id="contact_'+f.id+'">'+
+                '<div class="contact-avatar c'+(i%5)+'"><i class="fas fa-user"></i></div>'+
+                '<div class="contact-info"><div class="contact-name">'+escapeHtml(f.remark||f.username)+'</div><div class="contact-preview">点击开始聊天</div></div></div>';
+        });
+    }else if(currentTab==='group'){
+        el.innerHTML = '<div class="contact-item" onclick="showGroupCreate()"><div class="contact-avatar c0"><i class="fas fa-plus"></i></div><div class="contact-info"><div class="contact-name">创建群聊</div></div></div>';
+        if(!groups.length){el.innerHTML+='<div style="padding:40px;text-align:center;color:#ccc"><i class="fas fa-users" style="font-size:36px;display:block;margin-bottom:12px"></i><span style="font-size:13px">暂无群组</span></div>';return}
+        groups.forEach(g=>{
+            el.innerHTML += '<div class="contact-item" onclick="openGroupChat('+g.id+',\''+escapeHtml(g.name)+'\')" id="group_'+g.id+'">'+
+                '<div class="contact-avatar group"><i class="fas fa-users"></i></div>'+
+                '<div class="contact-info"><div class="contact-name">'+escapeHtml(g.name)+' ('+g.member_count+')</div><div class="contact-preview">点击进入群聊</div></div></div>';
+        });
+    }else if(currentTab==='contacts'){
+        var reqHtml = '<div style="padding:12px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:8px">'+
+            '<div style="flex:1;cursor:pointer" onclick="showFriendRequests()"><i class="fas fa-bell me-2" style="color:#07c160"></i>好友请求<span id="reqBadge" class="badge-count" style="display:none;margin-left:8px">0</span></div>'+
+            '<button class="btn btn-outline-success btn-sm" onclick="switchTab(\'search\')"><i class="fas fa-user-plus"></i> 添加</button></div>';
+        el.innerHTML = reqHtml;
+        var cEmpList = friends.filter(function(f){return f.is_employee});
+        var cNormalList = friends.filter(function(f){return !f.is_employee});
+        if(cEmpList.length){
+            el.innerHTML += '<div style="padding:8px 16px;font-size:12px;color:#999">数字员工</div>';
+            cEmpList.forEach(function(f){
+                el.innerHTML += '<div class="contact-item"><div class="contact-avatar bot"><i class="fas fa-robot"></i></div><div class="contact-info"><div class="contact-name">'+escapeHtml(f.remark||f.username)+'<span class="emp-badge">员工</span></div><div class="contact-preview">@'+escapeHtml(f.username)+'</div></div></div>';
+            });
+            if(cNormalList.length) el.innerHTML += '<div style="padding:8px 16px;font-size:12px;color:#999">好友</div>';
+        }
+        if(!cNormalList.length){return}
+        el.innerHTML += '<div style="padding:8px 16px;font-size:12px;color:#999">共 '+cNormalList.length+' 位好友</div>';
+        cNormalList.forEach(function(f,i){
+            el.innerHTML += '<div class="contact-item" style="position:relative" onclick="openPrivateChat('+f.id+',\''+escapeHtml(f.remark||f.username)+'\','+i+')" id="addr_'+f.id+'">'+
+                '<div class="contact-avatar c'+(i%5)+'"><i class="fas fa-user"></i></div>'+
+                '<div class="contact-info"><div class="contact-name">'+escapeHtml(f.remark||f.username)+'</div><div class="contact-preview">@'+escapeHtml(f.username)+'</div></div>'+
+                '<button class="btn btn-sm text-danger" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:2" onclick="event.stopPropagation();removeContact('+f.id+',\''+escapeHtml(f.remark||f.username)+'\')" title="删除好友"><i class="fas fa-trash-alt"></i></button></div>';
+        });
+    }else if(currentTab==='search'){
+        el.innerHTML = '<div style="padding:12px"><input class="form-control" id="searchInput" placeholder="输入用户名查找" onkeydown="if(event.key===\'Enter\')searchUsers()"><button class="btn btn-success btn-sm w-100 mt-2" onclick="searchUsers()">查找</button></div><div id="searchResults"></div>';
+    }else if(currentTab==='employees'){
+        if(!emps.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#ccc"><span style="font-size:13px">暂无可用的数字员工</span></div>';return}
+        emps.forEach(function(e,i){
+            el.innerHTML += '<div class="contact-item" onclick="openEmpChat(\''+e.alias+'\',\''+escapeHtml(e.name)+'\')">'+
+                '<div class="contact-avatar bot"><i class="fas fa-robot"></i></div>'+
+                '<div class="contact-info"><div class="contact-name">@'+escapeHtml(e.alias)+'<span class="emp-badge">员工</span></div><div class="contact-preview">'+escapeHtml(e.name)+' - '+escapeHtml(e.emp_type)+'型</div></div></div>';
+        });
+    }
+}
+
+function searchUsers(){
+    var kw = document.getElementById('searchInput').value.trim();
+    if(!kw)return;
+    var f = new FormData();
+    f.append('keyword',kw);
+    f.append('_xsrf',_xsrf);
+    fetch('/user/im/search',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        var el = document.getElementById('searchResults');
+        if(!d.success||!d.data.length){el.innerHTML='<div style="padding:20px;text-align:center;color:#ccc">未找到用户</div>';return}
+        el.innerHTML = d.data.map(u=>{
+            var btn = u.is_contact?'<span class="badge bg-success">已添加</span>':
+                u.pending?'<span class="badge bg-warning">等待验证</span>':
+                '<button class="btn btn-success btn-sm" onclick="sendFriendReq('+u.id+',\''+escapeHtml(u.username)+'\')">添加</button>';
+            return '<div class="list-select-item"><div class="contact-avatar c0" style="width:36px;height:36px"><i class="fas fa-user"></i></div><div style="flex:1">@'+escapeHtml(u.username)+'</div>'+btn+'</div>';
+        }).join('');
+    });
+}
+
+function sendFriendReq(uid,uname){
+    var msg = prompt('发送好友请求给 @'+uname+'，可附言：');
+    var f = new FormData();
+    f.append('user_id',uid);
+    f.append('_xsrf',_xsrf);
+    if(msg)f.append('message',msg);
+    fetch('/user/im/friend-request/send',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);
+        searchUsers();
+    });
+}
+
+function showFriendRequests(){
+    fetch('/user/im/friend-request/list?_xsrf='+_xsrf).then(r=>r.json()).then(d=>{
+        var el = document.getElementById('friendRequestList');
+        var inc = d.data.incoming||[];
+        var out = d.data.outgoing||[];
+        var html = '<h6>收到的好友请求</h6>';
+        if(!inc.length)html+='<p class="text-muted">暂无</p>';
+        else inc.forEach(r=>{html+='<div class="d-flex justify-content-between align-items-center p-2 border-bottom" id="reqRow_'+r.id+'"><span><b>@'+escapeHtml(r.from_username)+'</b> '+(r.message||'')+'</span><div class="req-actions"><button class="btn btn-success btn-sm me-1" onclick="handleReq('+r.id+',\'accept\')">接受</button><button class="btn btn-outline-danger btn-sm" onclick="handleReq('+r.id+',\'reject\')">拒绝</button></div></div>'});
+        html += '<h6 class="mt-3">发出的好友请求</h6>';
+        if(!out.length)html+='<p class="text-muted">暂无</p>';
+        else out.forEach(r=>{html+='<div class="p-2 border-bottom"><b>@'+escapeHtml(r.to_username)+'</b> <span class="badge bg-warning">等待验证</span> '+(r.message||'')+'</div>'});
+        el.innerHTML = html;
+        new bootstrap.Modal(document.getElementById('friendModal')).show();
+    });
+}
+
+function handleReq(id,action){
+    var f = new FormData();
+    f.append('id',id);f.append('action',action);f.append('_xsrf',_xsrf);
+    fetch('/user/im/friend-request/handle',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            var row = document.getElementById('reqRow_'+id);
+            if(row){
+                var statusText = action==='accept'?'已接受':'已拒绝';
+                var colorClass = action==='accept'?'text-success':'text-danger';
+                row.querySelector('.req-actions').innerHTML = '<span class="'+colorClass+' fw-bold">'+statusText+'</span>';
+            }
+            if(action==='accept'){
+                refreshFriends();
+            }
+            updateReqBadge();
+        }
+    });
+}
+
+function refreshFriends(){
+    fetch('/user/im/contacts?_xsrf='+_xsrf).then(r=>r.json()).then(d=>{
+        if(d.success){
+            friends = d.data;
+            if(currentTab==='private'||currentTab==='contacts')renderSidebarList();
+        }
+    });
+}
+
+function removeContact(contactId,contactName){
+    var f = friends.find(function(f){return f.id === contactId && f.is_employee});
+    if(f){showToast('数字员工不可删除');return;}
+    if(!confirm('确定删除好友 "'+contactName+'" 吗？'))return;
+    var f = new FormData();
+    f.append('contact_id',contactId);
+    f.append('_xsrf',_xsrf);
+    fetch('/user/im/contact/remove',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            friends = friends.filter(f=>f.id!==contactId);
+            renderSidebarList();
+        }
+        alert(d.message);
+    });
+}
+
+var _groupCreateSelected = new Set();
+var _groupInviteSelected = new Set();
+var _groupInviteTargetId = null;
+
+function showGroupCreate(){
+    _groupCreateSelected = new Set();
+    var el = document.getElementById('groupCreateList');
+    var html = '';
+    friends.forEach((f,i)=>{
+        html += '<div class="group-create-item" data-id="'+f.id+'" data-name="'+(f.remark||f.username)+'" data-username="'+escapeHtml(f.username)+'" onclick="toggleGroupCreateItem(this,'+f.id+')">'+
+            '<div class="check-circle"><i class="fas fa-check"></i></div>'+
+            '<div class="group-create-avatar c'+(i%5)+'"><i class="fas fa-user"></i></div>'+
+            '<div class="group-create-info"><div class="gc-name">'+escapeHtml(f.remark||f.username)+'</div><div class="gc-remark">@'+escapeHtml(f.username)+'</div></div></div>';
+    });
+    el.innerHTML = html || '<div style="padding:40px;text-align:center;color:#ccc">暂无好友，先去添加吧</div>';
+    document.getElementById('gcSearchInput').value = '';
+    updateGroupCreateBar();
+    var modal = new bootstrap.Modal(document.getElementById('groupCreateModal'));
+    modal.show();
+}
+
+function filterGroupCreateList(){
+    var kw = document.getElementById('gcSearchInput').value.toLowerCase();
+    document.querySelectorAll('#groupCreateList .group-create-item').forEach(item=>{
+        var name = item.getAttribute('data-name').toLowerCase();
+        var username = item.getAttribute('data-username').toLowerCase();
+        item.style.display = (name.includes(kw)||username.includes(kw)) ? '' : 'none';
+    });
+}
+
+function toggleGroupCreateItem(item, id){
+    if(_groupCreateSelected.has(id)){
+        _groupCreateSelected.delete(id);
+        item.classList.remove('selected');
+    }else{
+        _groupCreateSelected.add(id);
+        item.classList.add('selected');
+    }
+    updateGroupCreateBar();
+}
+
+function updateGroupCreateBar(){
+    var cnt = _groupCreateSelected.size;
+    document.getElementById('gcSelectedCount').textContent = '已选 '+cnt+' 人';
+    var btn = document.getElementById('gcDoneBtn');
+    if(cnt >= 1){
+        btn.className = 'done-btn enabled';
+        btn.disabled = false;
+    }else{
+        btn.className = 'done-btn disabled';
+        btn.disabled = true;
+    }
+}
+
+function createGroup(){
+    if(_groupCreateSelected.size < 1)return;
+    var ids = Array.from(_groupCreateSelected).join(',');
+    var f = new FormData();
+    f.append('member_ids',ids);f.append('_xsrf',_xsrf);
+    fetch('/user/im/group/create',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            bootstrap.Modal.getInstance(document.getElementById('groupCreateModal')).hide();
+            refreshGroupsAndOpen(d.group_id, d.group_name);
+        }else{
+            alert(d.message);
+        }
+    });
+}
+
+function refreshGroupsAndOpen(groupId, groupName){
+    fetch('/user/im/group/members?group_id='+groupId+'&_xsrf='+_xsrf).then(r=>r.json()).then(d2=>{
+        if(d2.success){
+            var newGroup = {id: groupId, name: groupName, member_count: d2.data.length, members: d2.data};
+            groups.push(newGroup);
+        }
+        renderSidebarList();
+        openGroupChat(groupId, groupName);
+        var tip = document.createElement('div');
+        tip.className = 'msg-system';
+        tip.textContent = '你发起了群聊，邀请成员加入';
+        var msgs = document.getElementById('chatMessages');
+        if(msgs.querySelector('.empty-chat'))msgs.innerHTML='';
+        msgs.appendChild(tip);
+    });
+}
+
+function showGroupMembers(){
+    if(!chatGroup)return;
+    var modal = new bootstrap.Modal(document.getElementById('groupMembersModal'));
+    fetch('/user/im/group/members?group_id='+chatGroup.id+'&_xsrf='+_xsrf).then(r=>r.json()).then(d=>{
+        var el = document.getElementById('groupMembersList');
+        if(!d.success||!d.data.length){el.innerHTML='<div style="padding:20px;text-align:center;color:#ccc">暂无成员</div>';modal.show();return}
+        var isOwner = d.data.some(function(m){return m.user_id===userId && m.role==='owner'});
+        var html = '';
+        if(isOwner){
+            html += '<div class="group-name-row" onclick="bootstrap.Modal.getInstance(document.getElementById(\'groupMembersModal\')).hide();openEditName()">'+
+                '<div class="gn-avatar c0"><i class="fas fa-users"></i></div>'+
+                '<div class="gn-info"><div class="gn-name"><span class="gn-tag">群名称</span> '+escapeHtml(chatGroup.name)+'</div><div class="gn-hint">点击修改群名称</div></div>'+
+                '<span class="gn-arrow"><i class="fas fa-chevron-right"></i></span></div>';
+        }else{
+            html += '<div class="group-name-row" style="cursor:default;background:#fafbfc">'+
+                '<div class="gn-avatar c0"><i class="fas fa-users"></i></div>'+
+                '<div class="gn-info"><div class="gn-name"><span class="gn-tag">群名称</span> '+escapeHtml(chatGroup.name)+'</div></div></div>';
+        }
+        html += d.data.map(function(m,i){
+            var roleLabel = m.role==='owner'?'（群主）':'';
+            return '<div class="group-create-item">'+
+                '<div class="group-create-avatar c'+(i%5)+'"><i class="fas fa-user"></i></div>'+
+                '<div class="group-create-info"><div class="gc-name">'+escapeHtml(m.username)+'</div><div class="gc-remark">'+roleLabel+'</div></div></div>';
+        }).join('');
+        el.innerHTML = html;
+        var actionsEl = document.getElementById('groupMembersActions');
+        if(isOwner){
+            actionsEl.innerHTML = '<button class="btn btn-outline-danger btn-sm w-100 mb-2" onclick="bootstrap.Modal.getInstance(document.getElementById(\'groupMembersModal\')).hide();disbandGroupConfirm()">解散该群</button>'+
+                '<button class="btn btn-outline-secondary btn-sm w-100" onclick="bootstrap.Modal.getInstance(document.getElementById(\'groupMembersModal\')).hide();leaveGroupConfirm()">退出群聊</button>';
+        }else{
+            actionsEl.innerHTML = '<button class="btn btn-outline-secondary btn-sm w-100" onclick="bootstrap.Modal.getInstance(document.getElementById(\'groupMembersModal\')).hide();leaveGroupConfirm()">退出群聊</button>';
+        }
+        modal.show();
+    });
+}
+
+function leaveGroupConfirm(){
+    fetch('/user/im/group/members?group_id='+chatGroup.id+'&_xsrf='+_xsrf).then(r=>r.json()).then(md=>{
+        if(!md.success||!md.data.length)return;
+        var isOwner = md.data.some(function(m){return m.user_id===userId && m.role==='owner'});
+        if(isOwner){
+            showGroupTransfer(md.data);
+            return;
+        }
+        var gid = chatGroup.id;
+        showWxConfirm('退出群聊','退出后将不再接收此群聊消息，且无法查看群成员列表',function(){
+            doLeave(gid);
+        });
+    });
+}
+
+function showGroupTransfer(members){
+    var others = members.filter(function(m){return m.user_id !== userId});
+    var el = document.getElementById('groupTransferList');
+    el.innerHTML = others.map(function(m,i){
+        return '<div class="group-create-item" data-id="'+m.user_id+'" data-name="'+escapeHtml(m.username)+'" onclick="transferOwnerSelect(this,'+m.user_id+')">'+
+            '<div class="group-create-avatar c'+(i%5)+'"><i class="fas fa-user"></i></div>'+
+            '<div class="group-create-info"><div class="gc-name">'+escapeHtml(m.username)+'</div></div></div>';
+    }).join('');
+    if(!others.length){
+        el.innerHTML = '<div style="padding:40px;text-align:center;color:#ccc">群内暂无其他成员，请解散群聊</div>';
+    }
+    var modal = new bootstrap.Modal(document.getElementById('groupTransferModal'));
+    modal.show();
+}
+
+var _transferTargetId = null;
+
+function transferOwnerSelect(item, userId){
+    document.querySelectorAll('#groupTransferList .group-create-item.selected').forEach(function(el){el.classList.remove('selected')});
+    item.classList.add('selected');
+    _transferTargetId = userId;
+    var name = item.getAttribute('data-name');
+    showWxConfirm('转让群主','确定将群主转让给 '+name+' 吗？转让后你将自动退出群聊。',function(){
+        var f = new FormData();
+        f.append('group_id',chatGroup.id);
+        f.append('to_user_id',_transferTargetId);
+        f.append('_xsrf',_xsrf);
+        fetch('/user/im/group/transfer',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+            if(d.success){
+                doLeave(chatGroup.id);
+            }else{
+                showToast(d.message);
+            }
+        });
+    });
+}
+
+function doLeave(gid){
+    var f = new FormData();
+    f.append('group_id',gid);
+    f.append('_xsrf',_xsrf);
+    fetch('/user/im/group/leave',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            showToast(d.message);
+            chatGroup = null;
+            clearPoll();
+            document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><p>选择一个对话开始聊天</p></div>';
+            document.getElementById('chatInputArea').style.display = 'none';
+            document.getElementById('btnMembers').style.display = 'none';
+            document.getElementById('chatType').style.display = 'none';
+            document.getElementById('chatTitle').textContent = '选择一个对话';
+            groups = groups.filter(function(g){return g.id !== gid;});
+            renderSidebarList();
+        }else{
+            showToast(d.message);
+        }
+    });
+}
+
+function disbandGroupConfirm(){
+    var gid = chatGroup.id;
+    showWxConfirm('解散群聊','解散后，所有成员都将被移出群聊，聊天记录将被清空。该操作不可恢复。',function(){
+        var f = new FormData();
+        f.append('group_id',gid);
+        f.append('_xsrf',_xsrf);
+        fetch('/user/im/group/disband',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+            if(d.success){
+                showToast(d.message);
+                chatGroup = null;
+                clearPoll();
+                document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><p>选择一个对话开始聊天</p></div>';
+                document.getElementById('chatInputArea').style.display = 'none';
+                document.getElementById('btnMembers').style.display = 'none';
+                document.getElementById('chatType').style.display = 'none';
+                document.getElementById('chatTitle').textContent = '选择一个对话';
+                groups = groups.filter(function(g){return g.id !== gid;});
+                renderSidebarList();
+            }else{
+                showToast(d.message);
+            }
+        });
+    });
+}
+
+function showWxConfirm(title,body,onConfirm){
+    var overlay = document.createElement('div');
+    overlay.className = 'wx-confirm-overlay';
+    overlay.innerHTML = '<div class="wx-confirm-box">'+
+        '<div class="wx-confirm-title">'+escapeHtml(title)+'</div>'+
+        '<div class="wx-confirm-body">'+escapeHtml(body)+'</div>'+
+        '<div class="wx-confirm-btns"><button class="btn-cancel" id="wxCancel">取消</button><button class="btn-danger" id="wxConfirm">确定</button></div></div>';
+    document.body.appendChild(overlay);
+    document.getElementById('wxCancel').onclick = function(){document.body.removeChild(overlay)};
+    document.getElementById('wxConfirm').onclick = function(){
+        document.body.removeChild(overlay);
+        onConfirm();
+    };
+}
+
+function showToast(msg){
+    var container = document.getElementById('toastContainer');
+    var el = document.createElement('div');
+    el.className = 'toast-msg';
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(function(){
+        if(el.parentNode)el.parentNode.removeChild(el);
+    },2000);
+}
+
+function showGroupInvite(){
+    if(!chatGroup)return;
+    _groupInviteTargetId = chatGroup.id;
+    _groupInviteSelected = new Set();
+    fetch('/user/im/group/members?group_id='+chatGroup.id+'&_xsrf='+_xsrf).then(r=>r.json()).then(d=>{
+        var existingIds = new Set(d.data.map(m=>m.user_id));
+        var el = document.getElementById('groupInviteList');
+        var candidates = friends.filter(f=>!existingIds.has(f.id));
+        if(!candidates.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#ccc">所有好友已在群中</div>';return}
+        el.innerHTML = candidates.map((f,i)=>{
+            return '<div class="group-create-item" data-id="'+f.id+'" data-name="'+(f.remark||f.username)+'" data-username="'+escapeHtml(f.username)+'" onclick="toggleInviteItem(this,'+f.id+')">'+
+                '<div class="check-circle"><i class="fas fa-check"></i></div>'+
+                '<div class="group-create-avatar c'+(i%5)+'"><i class="fas fa-user"></i></div>'+
+                '<div class="group-create-info"><div class="gc-name">'+escapeHtml(f.remark||f.username)+'</div><div class="gc-remark">@'+escapeHtml(f.username)+'</div></div></div>';
+        }).join('');
+        document.getElementById('giSearchInput').value = '';
+        updateInviteBar();
+        bootstrap.Modal.getInstance(document.getElementById('groupMembersModal'))?.hide();
+        var modal = new bootstrap.Modal(document.getElementById('groupInviteModal'));
+        modal.show();
+    });
+}
+
+function filterInviteList(){
+    var kw = document.getElementById('giSearchInput').value.toLowerCase();
+    document.querySelectorAll('#groupInviteList .group-create-item').forEach(item=>{
+        var name = item.getAttribute('data-name').toLowerCase();
+        var username = item.getAttribute('data-username').toLowerCase();
+        item.style.display = (name.includes(kw)||username.includes(kw)) ? '' : 'none';
+    });
+}
+
+function toggleInviteItem(item, id){
+    if(_groupInviteSelected.has(id)){
+        _groupInviteSelected.delete(id);
+        item.classList.remove('selected');
+    }else{
+        _groupInviteSelected.add(id);
+        item.classList.add('selected');
+    }
+    updateInviteBar();
+}
+
+function updateInviteBar(){
+    var cnt = _groupInviteSelected.size;
+    document.getElementById('giSelectedCount').textContent = '已选 '+cnt+' 人';
+    var btn = document.getElementById('giDoneBtn');
+    if(cnt >= 1){
+        btn.className = 'done-btn enabled';
+        btn.disabled = false;
+    }else{
+        btn.className = 'done-btn disabled';
+        btn.disabled = true;
+    }
+}
+
+function inviteMembers(){
+    if(_groupInviteSelected.size < 1||!_groupInviteTargetId)return;
+    var ids = Array.from(_groupInviteSelected).join(',');
+    var f = new FormData();
+    f.append('group_id', _groupInviteTargetId);
+    f.append('member_ids', ids);
+    f.append('_xsrf', _xsrf);
+    fetch('/user/im/group/invite',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            bootstrap.Modal.getInstance(document.getElementById('groupInviteModal')).hide();
+            alert(d.message);
+        }else{
+            alert(d.message);
+        }
+    });
+}
+
+var _originalGroupName = '';
+
+function openEditName(){
+    if(!chatGroup)return;
+    _originalGroupName = chatGroup.name;
+    var input = document.getElementById('editNameInput');
+    input.value = chatGroup.name;
+    updateNameHint();
+    document.getElementById('editNameDone').className = 'done-btn disabled';
+    document.getElementById('editNameOverlay').classList.add('show');
+    setTimeout(function(){input.focus()}, 350);
+}
+
+function closeEditName(){
+    document.getElementById('editNameOverlay').classList.remove('show');
+}
+
+function onNameInput(){
+    var input = document.getElementById('editNameInput');
+    var val = input.value;
+    updateNameHint();
+    var doneBtn = document.getElementById('editNameDone');
+    if(val.trim() === '' || val === _originalGroupName){
+        doneBtn.className = 'done-btn disabled';
+    }else{
+        doneBtn.className = 'done-btn';
+    }
+}
+
+function updateNameHint(){
+    var val = document.getElementById('editNameInput').value;
+    document.getElementById('editNameHint').textContent = val.length + '/30';
+}
+
+function saveGroupName(){
+    var input = document.getElementById('editNameInput');
+    var val = input.value.trim();
+    if(!val || val === _originalGroupName)return;
+    if(val.length > 30){showToast('群名称不能超过30个字符');return}
+    var f = new FormData();
+    f.append('group_id', chatGroup.id);
+    f.append('name', val);
+    f.append('_xsrf', _xsrf);
+    fetch('/user/im/group/rename',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            closeEditName();
+            showToast(d.message);
+            chatGroup.name = d.group_name || val;
+            document.getElementById('chatTitle').textContent = chatGroup.name;
+            for(var i = 0; i < groups.length; i++){
+                if(groups[i].id === chatGroup.id){
+                    groups[i].name = chatGroup.name;
+                    break;
+                }
+            }
+            renderSidebarList();
+        }else{
+            showToast(d.message);
+        }
+    });
+}
+
+function openPrivateChat(peerId,peerName,idx){
+    chatPeer = {id:peerId,name:peerName,idx:idx};
+    chatGroup = null;
+    clearPoll();
+    renderedMsgIds = new Set();
+    document.getElementById('chatTitle').textContent = peerName;
+    document.getElementById('chatAvatar').innerHTML = '<i class="fas fa-user"></i>';
+    document.getElementById('chatType').style.display = 'none';
+    document.getElementById('btnMembers').style.display = 'none';
+    document.getElementById('chatInputArea').style.display = 'block';
+    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><p>加载中...</p></div>';
+    document.querySelectorAll('.contact-item').forEach(i=>i.classList.remove('active'));
+    document.getElementById('contact_'+peerId)?.classList.add('active');
+    lastPrivateMsgId = 0;
+    loadPrivateMessages();
+    pollTimer = setInterval(pollPrivate,1000);
+    hideSidebar();
+}
+
+function openEmpChat(empAlias,empName){
+    chatPeer = {id:-1,name:empName,emp_alias:empAlias};
+    chatGroup = null;
+    clearPoll();
+    renderedMsgIds = new Set();
+    document.getElementById('chatTitle').textContent = empName;
+    document.getElementById('chatAvatar').innerHTML = '<i class="fas fa-robot"></i>';
+    document.getElementById('chatType').style.display = 'none';
+    document.getElementById('btnMembers').style.display = 'none';
+    document.getElementById('chatInputArea').style.display = 'block';
+    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><p>加载中...</p></div>';
+    document.querySelectorAll('.contact-item').forEach(i=>i.classList.remove('active'));
+    document.getElementById('contact_-1')?.classList.add('active');
+    lastPrivateMsgId = 0;
+    loadPrivateMessages();
+    pollTimer = setInterval(pollPrivate,1000);
+    hideSidebar();
+}
+
+function loadPrivateMessages(){
+    var url = '/user/im/private/poll?_xsrf='+_xsrf+'&peer_id='+chatPeer.id+'&last_id=0';
+    if(chatPeer.emp_alias) url += '&emp_alias='+encodeURIComponent(chatPeer.emp_alias);
+    fetch(url).then(r=>r.json()).then(d=>{
+        if(!d.success)return;
+        var msgs = document.getElementById('chatMessages');
+        msgs.innerHTML = '';
+        d.data.forEach(m=>{
+            renderPrivateMsg(m);
+            lastPrivateMsgId = Math.max(lastPrivateMsgId,m.id);
+        });
+        msgs.scrollTop = msgs.scrollHeight;
+    });
+}
+
+function pollPrivate(){
+    if(!chatPeer)return;
+    var ids = Array.from(renderedMsgIds).join(',');
+    var url = '/user/im/private/poll?_xsrf='+_xsrf+'&peer_id='+chatPeer.id+'&last_id='+lastPrivateMsgId+'&rendered_ids='+encodeURIComponent(ids);
+    if(chatPeer.emp_alias) url += '&emp_alias='+encodeURIComponent(chatPeer.emp_alias);
+    fetch(url).then(r=>r.json()).then(d=>{
+        if(!d.success)return;
+        if(d.data.length){
+            d.data.forEach(m=>{
+                renderPrivateMsg(m);
+                lastPrivateMsgId = Math.max(lastPrivateMsgId,m.id);
+            });
+            var msgs = document.getElementById('chatMessages');
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+        if(d.recalled_ids && d.recalled_ids.length){
+            d.recalled_ids.forEach(function(mid){
+                handleRecallUpdate(mid);
+            });
+        }
+    });
+}
+
+function renderPrivateMsg(m){
+    var msgs = document.getElementById('chatMessages');
+    if(msgs.querySelector('.empty-chat'))msgs.innerHTML='';
+    if(m.is_recalled){
+        var who = m.from_user_id === userId ? '你' : m.from_username;
+        var tip = document.createElement('div');
+        tip.className = 'msg-recall-system';
+        tip.textContent = who + '撤回了一条消息';
+        msgs.appendChild(tip);
+        return;
+    }
+    var isMe = m.from_user_id === userId;
+    var isBot = m.from_user_id === 0;
+    var cls = isMe?'me':'other';
+    var row = document.createElement('div');
+    row.className = 'msg-row '+cls;
+    row.setAttribute('data-msg-id', m.id);
+    row.setAttribute('data-create-at', m.create_at);
+    row.setAttribute('data-from-user', m.from_user_id);
+    if(isMe){
+        row.addEventListener('contextmenu', function(e){
+            e.preventDefault();
+            showContextMenu(e, m.id, m.create_at);
+        });
+    }
+    var avatarIcon = '<i class="fas '+(isBot?'fa-robot':'fa-user')+'"></i>';
+    var contentHtml = '';
+    if(m.msg_type==='image'){
+        contentHtml = '<img class="msg-img" src="'+m.file_path+'" onclick="window.open(this.src)">';
+    }else if(m.msg_type==='file'){
+        contentHtml = '<a class="msg-file" href="'+m.file_path+'" target="_blank"><i class="fas fa-file"></i><span>'+escapeHtml(m.file_name||'文件')+' ('+formatSize(m.file_size)+')</span></a>';
+    }else{
+        contentHtml = escapeHtml(m.content||'');
+    }
+    row.innerHTML = '<div class="msg-avatar">'+avatarIcon+'</div><div><div class="msg-bubble">'+contentHtml+'</div></div>';
+    msgs.appendChild(row);
+    renderedMsgIds.add(m.id);
+}
+
+function openGroupChat(gid,gname){
+    chatGroup = {id:gid,name:gname};
+    chatPeer = null;
+    clearPoll();
+    renderedMsgIds = new Set();
+    document.getElementById('chatTitle').textContent = gname;
+    document.getElementById('chatAvatar').innerHTML = '<i class="fas fa-users"></i>';
+    document.getElementById('chatType').style.display = 'inline-block';
+    document.getElementById('chatType').textContent = '群聊';
+    document.getElementById('btnMembers').style.display = 'inline-block';
+    document.getElementById('chatInputArea').style.display = 'block';
+    document.getElementById('chatMessages').innerHTML = '<div class="empty-chat"><p>加载中...</p></div>';
+    document.querySelectorAll('.contact-item').forEach(i=>i.classList.remove('active'));
+    document.getElementById('group_'+gid)?.classList.add('active');
+    lastGroupMsgId = 0;
+    loadGroupMessages();
+    pollTimer = setInterval(pollGroup,1000);
+    hideSidebar();
+}
+
+function loadGroupMessages(){
+    fetch('/user/im/group/poll?_xsrf='+_xsrf+'&group_id='+chatGroup.id+'&last_id=0').then(r=>r.json()).then(d=>{
+        if(!d.success)return;
+        var msgs = document.getElementById('chatMessages');
+        msgs.innerHTML = '';
+        d.data.forEach(m=>{
+            renderGroupMsg(m);
+            lastGroupMsgId = Math.max(lastGroupMsgId,m.id);
+        });
+        msgs.scrollTop = msgs.scrollHeight;
+    });
+}
+
+function pollGroup(){
+    if(!chatGroup)return;
+    var ids = Array.from(renderedMsgIds).join(',');
+    fetch('/user/im/group/poll?_xsrf='+_xsrf+'&group_id='+chatGroup.id+'&last_id='+lastGroupMsgId+'&rendered_ids='+encodeURIComponent(ids)).then(r=>r.json()).then(d=>{
+        if(!d.success)return;
+        if(d.data.length){
+            d.data.forEach(m=>{
+                renderGroupMsg(m);
+                lastGroupMsgId = Math.max(lastGroupMsgId,m.id);
+            });
+            var msgs = document.getElementById('chatMessages');
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+        if(d.recalled_ids && d.recalled_ids.length){
+            d.recalled_ids.forEach(function(mid){
+                handleRecallUpdate(mid);
+            });
+        }
+    });
+}
+
+function renderGroupMsg(m){
+    var msgs = document.getElementById('chatMessages');
+    if(msgs.querySelector('.empty-chat'))msgs.innerHTML='';
+    if(m.is_recalled){
+        var who = m.from_user_id === userId ? '你' : m.from_username;
+        var tip = document.createElement('div');
+        tip.className = 'msg-recall-system';
+        tip.textContent = who + '撤回了一条消息';
+        msgs.appendChild(tip);
+        return;
+    }
+    if(m.msg_type === 'system'){
+        var sysTip = document.createElement('div');
+        sysTip.className = 'msg-system';
+        try{
+            var sysData = JSON.parse(m.content||'{}');
+            if(sysData.action === 'create'){
+                sysTip.textContent = sysData.inviter + '创建了群聊';
+            }else if(sysData.action === 'invite'){
+                sysTip.textContent = sysData.inviter + '邀请了 ' + (sysData.member_names||[]).join('、') + ' 加入群聊';
+            }else if(sysData.action === 'member_leave'){
+                sysTip.textContent = sysData.username + '退出了群聊';
+            }else if(sysData.action === 'disband'){
+                sysTip.textContent = sysData.username + '解散了群聊';
+            }else if(sysData.action === 'owner_change'){
+                sysTip.textContent = sysData.old_owner + '将群主转让给 ' + sysData.new_owner;
+            }else if(sysData.action === 'rename'){
+                sysTip.textContent = sysData.editor + '修改群名为"' + sysData.new_name + '"';
+            }else{
+                sysTip.textContent = m.content||'';
+            }
+        }catch(e){
+            sysTip.textContent = m.content||'';
+        }
+        msgs.appendChild(sysTip);
+        return;
+    }
+    var isMe = m.from_user_id === userId;
+    var isEmp = m.at_employee !== null;
+    var cls = isMe?'me':(isEmp?'emp':'other');
+    var row = document.createElement('div');
+    row.className = 'msg-row '+cls;
+    row.setAttribute('data-msg-id', m.id);
+    row.setAttribute('data-create-at', m.create_at);
+    row.setAttribute('data-from-user', m.from_user_id);
+    if(isMe){
+        row.addEventListener('contextmenu', function(e){
+            e.preventDefault();
+            showContextMenu(e, m.id, m.create_at);
+        });
+    }
+    var senderHtml = (isMe||isEmp)?'':'<div class="msg-username">'+escapeHtml(m.from_username)+'</div>';
+    if(isEmp)senderHtml = '<div class="msg-sender">@'+escapeHtml(m.at_employee)+'</div>';
+    var contentHtml = '';
+    if(m.msg_type==='image'){
+        contentHtml = '<img class="msg-img" src="'+m.file_path+'" onclick="window.open(this.src)">';
+    }else if(m.msg_type==='file'){
+        contentHtml = '<a class="msg-file" href="'+m.file_path+'" target="_blank"><i class="fas fa-file"></i><span>'+escapeHtml(m.file_name||'文件')+' ('+formatSize(m.file_size)+')</span></a>';
+    }else{
+        contentHtml = escapeHtml(m.content||'');
+    }
+    row.innerHTML = '<div class="msg-avatar"><i class="fas '+(isEmp?'fa-robot':'fa-user')+'"></i></div><div>'+senderHtml+'<div class="msg-bubble">'+contentHtml+'</div></div>';
+    msgs.appendChild(row);
+    renderedMsgIds.add(m.id);
+}
+
+function sendMessage(){
+    if(!chatPeer&&!chatGroup)return;
+    var msg = document.getElementById('chatInput').value.trim();
+    if(!msg)return;
+    document.getElementById('chatInput').value='';
+    document.getElementById('emojiPicker').classList.remove('show');
+
+    if(chatPeer){
+        var f = new FormData();
+        f.append('peer_id',chatPeer.id);f.append('message',msg);f.append('msg_type','text');f.append('_xsrf',_xsrf);
+        if(chatPeer.emp_alias) f.append('emp_alias',chatPeer.emp_alias);
+        fetch('/user/im/private/chat',{method:'POST',body:f});
+    }else if(chatGroup){
+        var m = msg.match(/^@(\S+)\s*/);
+        var f = new FormData();
+        f.append('group_id',chatGroup.id);f.append('message',msg);f.append('msg_type','text');f.append('_xsrf',_xsrf);
+        if(m)f.append('at_employee',m[1]);
+        fetch('/user/im/group/send',{method:'POST',body:f});
+    }
+}
+
+function uploadFile(input){
+    var file = input.files[0];
+    if(!file)return;
+    if(!chatPeer&&!chatGroup){alert('请先选择对话');return}
+    if(file.size>52428800){alert('文件大小不能超过50MB');return}
+    var f = new FormData();
+    f.append('file',file);f.append('_xsrf',_xsrf);
+    fetch('/user/im/upload',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(!d.success){alert(d.message);return}
+        var info = d.data;
+        if(chatPeer){
+            var pf = new FormData();
+            pf.append('peer_id',chatPeer.id);pf.append('message',info.file_path);pf.append('msg_type',info.msg_type);
+            pf.append('file_name',info.file_name);pf.append('file_size',info.file_size);pf.append('file_path',info.file_path);
+            pf.append('_xsrf',_xsrf);
+            if(chatPeer.emp_alias) pf.append('emp_alias',chatPeer.emp_alias);
+            fetch('/user/im/private/chat',{method:'POST',body:pf});
+        }else if(chatGroup){
+            var gf = new FormData();
+            gf.append('group_id',chatGroup.id);gf.append('message','');gf.append('msg_type',info.msg_type);
+            gf.append('file_name',info.file_name);gf.append('file_size',info.file_size);gf.append('file_path',info.file_path);
+            gf.append('_xsrf',_xsrf);
+            fetch('/user/im/group/send',{method:'POST',body:gf});
+        }
+    });
+    input.value='';
+}
+
+function clearPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null}}
+
+function updateReqBadge(){
+    fetch('/user/im/friend-request/count?_xsrf='+_xsrf).then(r=>r.json()).then(d=>{
+        var b = document.getElementById('reqBadge');
+        if(!b)return;
+        if(d.count>0){
+            b.textContent = d.count;
+            b.style.display = 'inline-block';
+        }else{
+            b.style.display = 'none';
+        }
+    });
+}
+
+function showContextMenu(e, msgId, createAt){
+    contextMsgId = msgId;
+    var menu = document.getElementById('contextMenu');
+    var recallItem = document.getElementById('menuRecall');
+    var msgTime = new Date(createAt.replace(' ','T') + 'Z').getTime();
+    var diff = (Date.now() - msgTime) / 1000 / 60;
+    if(diff > 2){
+        recallItem.classList.add('disabled');
+    }else{
+        recallItem.classList.remove('disabled');
+    }
+    menu.style.display = 'block';
+    var left = e.pageX;
+    var top = e.pageY;
+    if(left + 130 > window.innerWidth)left = window.innerWidth - 140;
+    if(top + 50 > window.innerHeight)top = window.innerHeight - 60;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+}
+
+function recallMessage(){
+    if(!contextMsgId)return;
+    var item = document.getElementById('menuRecall');
+    if(item.classList.contains('disabled'))return;
+    var msgId = contextMsgId;
+    hideContextMenu();
+    var f = new FormData();
+    f.append('msg_id', msgId);
+    f.append('_xsrf', _xsrf);
+    var url = chatPeer ? '/user/im/private/recall' : '/user/im/group/recall';
+    fetch(url, {method:'POST', body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            handleRecallUpdate(msgId);
+        }else{
+            alert(d.message);
+        }
+    });
+}
+
+function handleRecallUpdate(msgId){
+    var row = document.querySelector('.msg-row[data-msg-id="'+msgId+'"]');
+    if(!row)return;
+    var fromId = parseInt(row.getAttribute('data-from-user'));
+    var who = fromId === userId ? '你' : (row.querySelector('.msg-username')?.textContent || '对方');
+    var tip = document.createElement('div');
+    tip.className = 'msg-recall-system';
+    tip.textContent = who + '撤回了一条消息';
+    row.replaceWith(tip);
+    renderedMsgIds.delete(msgId);
+}
+
+function hideContextMenu(){
+    document.getElementById('contextMenu').style.display = 'none';
+    contextMsgId = null;
+}
+
+function escapeHtml(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function formatSize(bytes){if(!bytes)return '0B';var u=['B','KB','MB','GB'];var i=0;while(bytes>=1024&&i<3){bytes/=1024;i++}return bytes.toFixed(1)+u[i]}
+
+initEmojiPicker();
+renderSidebarList();
+setInterval(updateReqBadge, 3000);
+updateReqBadge();
+document.addEventListener('click', hideContextMenu);
+</script>
+</body>
+</html>

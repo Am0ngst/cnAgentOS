@@ -1,0 +1,100 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<style>
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.server-card{border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:20px;margin-bottom:16px;background:#fff;transition:all .3s;position:relative}
+.server-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.server-card .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+.server-card .status-active{background:#07c160}
+.server-card .status-inactive{background:#ccc}
+</style>
+<div class="page-header">
+    <h4 class="mb-0"><i class="fas fa-server me-2"></i>服务器管理</h4>
+    <button class="btn btn-primary btn-sm" onclick="openEditor()"><i class="fas fa-plus me-1"></i>添加服务器</button>
+</div>
+<div id="serverList"></div>
+
+<div class="modal fade" id="serverModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 id="serverModalTitle">添加服务器</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <input type="hidden" id="serverId">
+            <div class="mb-3"><label class="form-label">名称</label><input class="form-control" id="srvName" placeholder="例如：主服务器"></div>
+            <div class="mb-3"><label class="form-label">主机地址</label><input class="form-control" id="srvHost" placeholder="例如：192.168.1.100"></div>
+            <div class="mb-3"><label class="form-label">端口</label><input class="form-control" id="srvPort" type="number" value="10086"></div>
+            <div class="mb-3"><label class="form-label">描述</label><textarea class="form-control" id="srvDesc" rows="2"></textarea></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button class="btn btn-primary" id="saveBtn" onclick="saveServer()">保存</button>
+        </div>
+    </div></div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+function loadList(){
+    fetch('/admin/im/servers/api').then(r=>r.json()).then(d=>{
+        var html = '';
+        (d.data||[]).forEach(function(s){
+            html += '<div class="server-card">'+
+                '<span class="status-dot '+(s.is_active?'status-active':'status-inactive')+'"></span>'+
+                '<strong>'+h(s.name)+'</strong>'+
+                '<span class="ms-2 text-muted">'+s.host+':'+s.port+'</span>'+
+                '<span class="ms-2 badge '+(s.is_active?'bg-success':'bg-secondary')+'">'+(s.is_active?'启用':'停用')+'</span>'+
+                '<div class="text-muted small mt-1">'+h(s.description||'')+'</div>'+
+                '<div class="mt-2">'+
+                '<button class="btn btn-outline-primary btn-sm me-1" onclick="openEditor('+JSON.stringify(s).replace(/"/g,'&quot;')+')">编辑</button>'+
+                '<button class="btn btn-outline-secondary btn-sm me-1" onclick="toggleServer('+s.id+','+s.is_active+')">'+(s.is_active?'停用':'启用')+'</button>'+
+                '<button class="btn btn-outline-danger btn-sm" onclick="deleteServer('+s.id+')">删除</button></div></div>';
+        });
+        document.getElementById('serverList').innerHTML = html || '<div class="text-center text-muted py-5">暂无服务器</div>';
+    });
+}
+
+function openEditor(s){
+    document.getElementById('serverId').value = s?s.id:'';
+    document.getElementById('srvName').value = s?s.name:'';
+    document.getElementById('srvHost').value = s?s.host:'';
+    document.getElementById('srvPort').value = s?s.port:10086;
+    document.getElementById('srvDesc').value = s?s.description||'':'';
+    document.getElementById('serverModalTitle').textContent = s?'编辑服务器':'添加服务器';
+    new bootstrap.Modal(document.getElementById('serverModal')).show();
+}
+
+function saveServer(){
+    var sid = document.getElementById('serverId').value;
+    var f = new FormData();
+    f.append('action',sid?'update':'create');
+    if(sid)f.append('id',sid);
+    f.append('name',document.getElementById('srvName').value);
+    f.append('host',document.getElementById('srvHost').value);
+    f.append('port',document.getElementById('srvPort').value);
+    f.append('description',document.getElementById('srvDesc').value);
+    fetch('/admin/im/servers/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);
+        bootstrap.Modal.getInstance(document.getElementById('serverModal')).hide();
+        loadList();
+    });
+}
+
+function toggleServer(id,current){
+    var f = new FormData();
+    f.append('action','toggle');f.append('id',id);f.append('is_active',current?0:1);
+    fetch('/admin/im/servers/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{loadList()});
+}
+
+function deleteServer(id){
+    if(!confirm('确定删除该服务器？'))return;
+    var f = new FormData();
+    f.append('action','delete');f.append('id',id);
+    fetch('/admin/im/servers/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
+}
+
+function h(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+loadList();
+</script>
+{% end %}

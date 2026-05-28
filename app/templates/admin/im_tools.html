@@ -1,0 +1,121 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<style>
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.table td{vertical-align:middle}
+</style>
+<div class="page-header">
+    <h4 class="mb-0"><i class="fas fa-tools me-2"></i>工具管理</h4>
+    <button class="btn btn-primary btn-sm" onclick="openEditor()"><i class="fas fa-plus me-1"></i>添加工具</button>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light"><tr>
+            <th>ID</th><th>名称</th><th>标识</th><th>类型</th><th>绑定员工</th><th>状态</th><th>操作</th>
+        </tr></thead>
+        <tbody id="toolTbody"></tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="toolModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 id="toolModalTitle">添加工具</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <input type="hidden" id="toolId">
+            <div class="mb-3"><label class="form-label">名称</label><input class="form-control" id="tName"></div>
+            <div class="mb-3"><label class="form-label">标识</label><input class="form-control" id="tCode" placeholder="英文标识"></div>
+            <div class="mb-3"><label class="form-label">类型</label><select class="form-select" id="tType"><option value="api">API</option><option value="function">函数</option><option value="plugin">插件</option></select></div>
+            <div class="mb-3"><label class="form-label">描述</label><textarea class="form-control" id="tDesc" rows="2"></textarea></div>
+            <div class="mb-3"><label class="form-label">配置（JSON）</label><textarea class="form-control" id="tConfig" rows="3" placeholder='{"key": "value"}'></textarea></div>
+            <div class="mb-3"><label class="form-label">绑定数字员工</label><select class="form-select" id="tEmployee">
+                <option value="">不绑定</option>
+                {% for e in employees %}<option value="{{ e.id }}">{{ e.name }} (@{{ e.alias }})</option>{% end %}
+            </select></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            <button class="btn btn-primary" onclick="saveTool()">保存</button>
+        </div>
+    </div></div>
+</div>
+{% end %}
+
+{% block scripts %}
+<script>
+function loadList(){
+    fetch('/admin/im/tools/api').then(r=>r.json()).then(d=>{
+        var html = '';
+        (d.data||[]).forEach(function(t){
+            html += '<tr><td>'+t.id+'</td><td>'+h(t.name)+'</td><td><code>'+h(t.code)+'</code></td><td>'+t.tool_type+'</td>'+
+                '<td>'+(t.employee_name||'<span class="text-muted">未绑定</span>')+'</td>'+
+                '<td><span class="badge '+(t.status?'bg-success':'bg-secondary')+'">'+(t.status?'启用':'禁用')+'</span></td>'+
+                '<td>'+
+                '<button class="btn btn-outline-primary btn-sm me-1" onclick=\'openEditor('+JSON.stringify(t).replace(/"/g,'&quot;')+')\'>编辑</button>'+
+                '<button class="btn btn-outline-secondary btn-sm me-1" onclick="toggleTool('+t.id+','+t.status+')">'+(t.status?'禁用':'启用')+'</button>'+
+                '<button class="btn btn-outline-danger btn-sm" onclick="deleteTool('+t.id+')">删除</button></td></tr>';
+        });
+        document.getElementById('toolTbody').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted">暂无工具</td></tr>';
+    });
+}
+
+function loadEmployees(){
+    fetch('/admin/digital-employees?format=json').then(r=>r.json()).then(d=>{
+        if(!d||!d.success)return;
+        var sel = document.getElementById('tEmployee');
+        sel.innerHTML = '<option value="">不绑定</option>';
+        (d.data||[]).forEach(function(e){
+            sel.innerHTML += '<option value="'+e.id+'">'+h(e.name)+' (@'+h(e.alias)+')</option>';
+        });
+    });
+}
+
+function openEditor(t){
+    document.getElementById('toolId').value = t?t.id:'';
+    document.getElementById('tName').value = t?t.name:'';
+    document.getElementById('tCode').value = t?t.code:'';
+    document.getElementById('tType').value = t?t.tool_type:'api';
+    document.getElementById('tDesc').value = t?t.description||'':'';
+    document.getElementById('tConfig').value = t?t.config||'{}':'';
+    document.getElementById('tEmployee').value = t?t.employee_id||'':'';
+    document.getElementById('toolModalTitle').textContent = t?'编辑工具':'添加工具';
+    new bootstrap.Modal(document.getElementById('toolModal')).show();
+}
+
+function saveTool(){
+    var tid = document.getElementById('toolId').value;
+    var f = new FormData();
+    f.append('action',tid?'update':'create');
+    if(tid)f.append('id',tid);
+    f.append('name',document.getElementById('tName').value);
+    f.append('code',document.getElementById('tCode').value);
+    f.append('tool_type',document.getElementById('tType').value);
+    f.append('description',document.getElementById('tDesc').value);
+    f.append('config',document.getElementById('tConfig').value);
+    var empId = document.getElementById('tEmployee').value;
+    if(empId)f.append('employee_id',empId);
+    fetch('/admin/im/tools/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        alert(d.message);
+        bootstrap.Modal.getInstance(document.getElementById('toolModal')).hide();
+        loadList();
+    });
+}
+
+function toggleTool(id,status){
+    var f = new FormData();
+    f.append('action','toggle');f.append('id',id);f.append('status',status?0:1);
+    fetch('/admin/im/tools/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{loadList()});
+}
+
+function deleteTool(id){
+    if(!confirm('确定删除该工具？'))return;
+    var f = new FormData();
+    f.append('action','delete');f.append('id',id);
+    fetch('/admin/im/tools/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
+}
+
+function h(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+loadList();
+</script>
+{% end %}

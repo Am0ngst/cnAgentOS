@@ -6,6 +6,7 @@ import tornado.web
 import tornado.gen
 from app.controllers.base import BaseHandler
 from app.models.user import UserRepository
+from app.models.im_model import IMMessageRepository
 from app.models.conversation import ConversationRepository
 from app.models.ai_model import AIModelRepository
 from app.models.digital_employee import DigitalEmployeeRepository
@@ -13,6 +14,30 @@ from app.models.watch_source import WatchDataRepository
 from app.models.db import get_connection
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+def build_api_message(emp, data):
+    code = (emp.get("api_code") or "").lower()
+    inner = data.get("data") if isinstance(data, dict) and "data" in data else data
+    if "music" in code:
+        name = inner.get("song") or inner.get("name") or inner.get("songname") or inner.get("title", "未知歌曲")
+        singer = inner.get("singer") or inner.get("author") or inner.get("artistsname") or inner.get("artist", "未知歌手")
+        cover = (inner.get("cover") or inner.get("pic") or inner.get("img", "")).strip().strip("`")
+        music_url = (inner.get("Music") or inner.get("url") or inner.get("mp3") or inner.get("music_url", "")).strip().strip("`")
+        return {"type": "music", "name": name, "singer": singer, "cover": cover, "music_url": music_url}
+    if "weather" in code:
+        lines = [f"【{emp['name']}】天气查询结果："]
+        if isinstance(inner, dict):
+            for k, v in inner.items():
+                if isinstance(v, (str, int, float)):
+                    lines.append(f"• {k}：{v}")
+        return {"type": "text", "text": "\n".join(lines)}
+    if isinstance(data, str):
+        return {"type": "text", "text": str(data)}
+    try:
+        return {"type": "text", "text": json.dumps(data, ensure_ascii=False, indent=2)}
+    except Exception:
+        return {"type": "text", "text": str(data)}
 
 
 class UserBaseHandler(BaseHandler):
@@ -27,6 +52,45 @@ class UserBaseHandler(BaseHandler):
 
     def get_login_url(self):
         return "/user/login"
+
+    def _handle_emp_api_reply(self, emp, message, user, emp_alias, chat_type="private"):
+        import requests
+        api_url = emp.get("api_url")
+        pc = emp.get("params_config")
+        url = api_url
+        if isinstance(pc, dict) and pc.get("param_key"):
+            if message:
+                url = f"{api_url}?{pc['param_key']}={requests.utils.quote(message)}"
+            elif pc.get("required"):
+                IMMessageRepository.send_private_employee(
+                    0, emp_alias, "text",
+                    f"请提供{pc.get('param_label', '参数')}，例如：{pc.get('placeholder', '')}"
+                )
+                return
+        try:
+            resp = requests.get(url, timeout=15)
+            data = resp.json()
+            result = build_api_message(emp, data)
+            if isinstance(result, dict) and result.get("type") == "music" and result.get("cover"):
+                IMMessageRepository.send_private_employee(
+                    0, emp_alias, "image", result["cover"],
+                    file_path=result["cover"]
+                )
+            text = ""
+            if isinstance(result, dict) and result.get("type") == "music":
+                text = f"🎵 {result['name']}\n👤 {result['singer']}"
+                if result.get("music_url"):
+                    text += f"\n🔗 {result['music_url']}"
+            elif isinstance(result, dict):
+                text = result.get("text", "")
+            else:
+                text = str(result)
+            if text:
+                IMMessageRepository.send_private_employee(0, emp_alias, "text", text)
+        except Exception:
+            IMMessageRepository.send_private_employee(
+                0, emp_alias, "text", f"抱歉，「{emp['name']}」服务暂时不可用，请稍后再试。"
+            )
 
 
 class UserLoginHandler(BaseHandler):
@@ -52,7 +116,7 @@ class UserLoginHandler(BaseHandler):
             return self.render("user/login.html", error="管理员请从后台登录")
 
         self.set_secure_cookie("username", username)
-        self.redirect("/user/chat")
+        self.redirect("/user/home")
 
 
 class UserRegisterHandler(BaseHandler):
@@ -79,7 +143,7 @@ class UserRegisterHandler(BaseHandler):
 
         if UserRepository.create_user(username, password, role_id=2):
             self.set_secure_cookie("username", username)
-            self.redirect("/user/chat")
+            self.redirect("/user/home")
         else:
             self.render("user/register.html", error="注册失败，请重试")
 
@@ -730,3 +794,12 @@ class UserEmployeeListHandler(UserBaseHandler):
                 "params_config": e.get("params_config")
             })
         self.write({"success": True, "data": result})
+
+
+class UserHomeHandler(UserBaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        user = self.get_current_user_info()
+        if not user:
+            return self.redirect("/user/login")
+        self.render("user/home.html", user=user)

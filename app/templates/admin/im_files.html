@@ -1,0 +1,67 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<style>
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.table td{vertical-align:middle}
+.file-preview{width:60px;height:60px;border-radius:8px;object-fit:cover;background:#f0f0f0}
+.file-link{color:#333;text-decoration:none;word-break:break-all}
+</style>
+<div class="page-header">
+    <h4 class="mb-0"><i class="fas fa-folder-open me-2"></i>文件管理</h4>
+    <div>
+        <input class="form-control form-control-sm d-inline-block" style="width:220px" id="kwInput" placeholder="搜索文件名..." onkeyup="if(event.key==='Enter')loadList()">
+        <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadList()">搜索</button>
+    </div>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light"><tr>
+            <th>预览</th><th>文件名</th><th>类型</th><th>大小</th><th>来源</th><th>时间</th><th>操作</th>
+        </tr></thead>
+        <tbody id="fileTbody"></tbody>
+    </table>
+</div>
+<div id="pager" class="text-end mt-3"></div>
+{% end %}
+
+{% block scripts %}
+<script>
+var _page = 1;
+
+function loadList(){
+    var kw = document.getElementById('kwInput').value;
+    fetch('/admin/im/files/api?page='+_page+'&keyword='+encodeURIComponent(kw)).then(r=>r.json()).then(d=>{
+        var html = '';
+        (d.data||[]).forEach(function(f){
+            var isImg = f.msg_type==='image';
+            html += '<tr>'+
+                '<td>'+(isImg?'<img class="file-preview" src="'+f.file_path+'" onerror="this.src=\'\'">':'<i class="fas fa-file fa-2x text-muted"></i>')+'</td>'+
+                '<td><a class="file-link" href="'+f.file_path+'" target="_blank">'+h(f.file_name||'未命名')+'</a></td>'+
+                '<td><span class="badge '+(isImg?'bg-info':'bg-secondary')+'">'+f.msg_type+'</span></td>'+
+                '<td>'+formatSize(f.file_size||0)+'</td>'+
+                '<td><span class="badge '+(f.source==='private'?'bg-primary':'bg-success')+'">'+(f.source==='private'?'私聊':'群聊')+'</span></td>'+
+                '<td>'+f.create_at+'</td>'+
+                '<td><button class="btn btn-danger btn-sm" onclick="delFile('+f.id+',\''+f.source+'\')">删除</button></td></tr>';
+        });
+        document.getElementById('fileTbody').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted">暂无文件</td></tr>';
+        var pages = Math.ceil((d.total||0)/30)||1;
+        var ph = '';
+        for(var i=1;i<=pages;i++){ph+='<button class="btn btn-sm '+(i===_page?'btn-primary':'btn-outline-primary')+' me-1" onclick="_page='+i+';loadList()">'+i+'</button>';}
+        document.getElementById('pager').innerHTML = ph;
+    });
+}
+
+function delFile(id,src){
+    if(!confirm('确定删除此文件记录？'))return;
+    var f = new FormData();
+    f.append('action','delete');f.append('id',id);f.append('source',src);
+    fetch('/admin/im/files/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
+}
+
+function formatSize(b){if(!b)return'0 B';var u=['B','KB','MB','GB'];var i=0;while(b>=1024&&i<3){b/=1024;i++}return b.toFixed(1)+' '+u[i]}
+function h(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+loadList();
+</script>
+{% end %}
