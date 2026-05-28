@@ -14,6 +14,11 @@ class DigitalEmployeeHandler(AdminBaseHandler):
     """数字员工管理页面"""
     @tornado.web.authenticated
     def get(self):
+        fmt = self.get_argument("format", "")
+        if fmt == "json":
+            data_list, total = DigitalEmployeeRepository.get_page(1, 999)
+            self.write({"success": True, "data": data_list, "total": total})
+            return
         page = int(self.get_argument("page", 1))
         per_page = 20
         data_list, total = DigitalEmployeeRepository.get_page(page, per_page)

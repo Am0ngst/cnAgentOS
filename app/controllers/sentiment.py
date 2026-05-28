@@ -191,6 +191,16 @@ class SentimentAIAnalyzeHandler(AdminBaseHandler):
                 "SELECT cm.role, cm.content FROM conversation_messages cm ORDER BY cm.create_at DESC LIMIT 30"
             ).fetchall()
 
+            im_count = conn.execute("SELECT COUNT(*) FROM im_messages WHERE msg_type='text'").fetchone()[0]
+            group_count = conn.execute("SELECT COUNT(*) FROM im_group_messages WHERE msg_type='text'").fetchone()[0]
+
+            im_recent = conn.execute(
+                "SELECT '私聊' as source, im.content FROM im_messages im WHERE im.msg_type='text' AND im.content IS NOT NULL ORDER BY im.create_at DESC LIMIT 15"
+            ).fetchall()
+            group_recent = conn.execute(
+                "SELECT '群聊' as source, igm.content FROM im_group_messages igm WHERE igm.msg_type='text' AND igm.content IS NOT NULL ORDER BY igm.create_at DESC LIMIT 15"
+            ).fetchall()
+
             watch_count = conn.execute("SELECT COUNT(*) FROM watch_data").fetchone()[0]
             watch_keywords = conn.execute(
                 "SELECT keyword, COUNT(*) as cnt FROM watch_data GROUP BY keyword ORDER BY cnt DESC LIMIT 10"
@@ -204,6 +214,10 @@ class SentimentAIAnalyzeHandler(AdminBaseHandler):
             f"[{r['role']}]: {r['content'][:200]}" for r in recent_msgs
         ]) if recent_msgs else "暂无对话数据"
 
+        im_samples = "\n".join([
+            f"[IM-{r['source']}]: {r['content'][:200]}" for r in (list(im_recent) + list(group_recent))
+        ]) if im_recent or group_recent else "暂无IM聊天数据"
+
         watch_info = "\n".join([
             f"  关键词「{r['keyword']}」: 采集 {r['cnt']} 条" for r in watch_keywords
         ]) if watch_keywords else "  暂无瞭望数据"
@@ -213,11 +227,16 @@ class SentimentAIAnalyzeHandler(AdminBaseHandler):
 ## 系统数据概览
 - 总用户对话数: {user_count}
 - 总消息条数: {chat_count}
+- IM私聊消息数: {im_count}
+- IM群聊消息数: {group_count}
 - 瞭望采集数据: {watch_count} 条
 - 深度采集数据: {deep_crawl} 条
 
 ## 近期对话样本
 {chat_samples}
+
+## 近期IM聊天样本
+{im_samples}
 
 ## 瞭望关键词分布
 {watch_info}

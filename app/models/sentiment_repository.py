@@ -91,6 +91,8 @@ class SentimentRepository:
             total_users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
             total_conversations = conn.execute("SELECT COUNT(*) FROM conversation_history").fetchone()[0]
             total_messages = conn.execute("SELECT COUNT(*) FROM conversation_messages").fetchone()[0]
+            im_private = conn.execute("SELECT COUNT(*) FROM im_messages WHERE msg_type='text'").fetchone()[0]
+            im_group = conn.execute("SELECT COUNT(*) FROM im_group_messages WHERE msg_type='text'").fetchone()[0]
             total_watch = conn.execute("SELECT COUNT(*) FROM watch_data").fetchone()[0]
             total_models = conn.execute("SELECT COUNT(*) FROM ai_models WHERE status=1").fetchone()[0]
             total_analyses = conn.execute("SELECT COUNT(*) FROM sentiment_analysis").fetchone()[0]
@@ -118,7 +120,7 @@ class SentimentRepository:
 
             return {
                 "total_users": total_users,
-                "total_conversations": total_conversations,
+                "total_conversations": total_conversations + im_private + im_group,
                 "total_messages": total_messages,
                 "total_watch": total_watch,
                 "total_models": total_models,

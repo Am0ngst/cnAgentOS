@@ -239,45 +239,44 @@ def init_db():
             """
         )
         
-        # 插入默认功能菜单
+        # 插入默认功能菜单  -- 结构: 6个文件夹(用户/配置/AI/采集/舆情/聊天) + 控制台
         default_functions = [
             (1, '控制台', 'dashboard', 'fas fa-tachometer-alt', '/admin/dashboard', None, 1, 1),
-            (2, '用户管理', 'users', 'fas fa-users', '/admin/users', None, 2, 1),
-            (3, '功能管理', 'functions', 'fas fa-cogs', '/admin/functions', None, 3, 1),
-            (4, '角色管理', 'roles', 'fas fa-user-tag', '/admin/roles', None, 4, 1),
-            (5, '权限管理', 'permissions', 'fas fa-key', '/admin/permissions', None, 5, 1),
-            (6, '模型引擎', 'models', 'fas fa-brain', '/admin/models', None, 6, 1),
-            (7, '瞭望采集', 'watch_collect', 'fas fa-search', '/admin/watch/collect', None, 7, 1),
-            (8, '数据仓库', 'watch_data', 'fas fa-database', '/admin/watch/data', None, 8, 1),
-            (9, '接口管理', 'api_interfaces', 'fas fa-plug', '/admin/api-interfaces', None, 9, 1),
-            (10, '数字员工', 'digital_employees', 'fas fa-robot', '/admin/digital-employees', None, 10, 1),
-            (11, '智慧舆情', 'sentiment', 'fas fa-chart-pie', None, None, 11, 1),
-            (12, '数智大屏', 'sentiment_dashboard', 'fas fa-globe', '/admin/sentiment/dashboard', 11, 1, 1),
-            (13, '智能舆情', 'sentiment_analysis', 'fas fa-brain', '/admin/sentiment/analysis', 11, 2, 1),
-            (14, '系统管理', 'system_mgmt', 'fas fa-cog', None, None, 12, 1),
-            (15, '数据采集', 'data_collect', 'fas fa-satellite-dish', None, None, 13, 1),
-            (16, '智能聊天', 'im_chat', 'fas fa-comments', None, None, 14, 1),
-            (17, '群管理', 'im_groups', 'fas fa-users', '/admin/im/groups', 16, 1, 1),
-            (18, '文件管理', 'im_files', 'fas fa-folder', '/admin/im/files', 16, 2, 1),
-            (19, '服务器管理', 'im_servers', 'fas fa-server', '/admin/im/servers', 16, 3, 1),
-            (20, '工具管理', 'im_tools', 'fas fa-tools', '/admin/im/tools', 16, 4, 1),
+            (2, '用户权限', 'user_perms', 'fas fa-shield-alt', None, None, 2, 1),
+            (3, '用户管理', 'users', 'fas fa-users', '/admin/users', 2, 1, 1),
+            (4, '角色管理', 'roles', 'fas fa-user-tag', '/admin/roles', 2, 2, 1),
+            (5, '权限管理', 'permissions', 'fas fa-key', '/admin/permissions', 2, 3, 1),
+            (6, '系统配置', 'system_cfg', 'fas fa-cogs', None, None, 3, 1),
+            (7, '功能管理', 'functions', 'fas fa-puzzle-piece', '/admin/functions', 6, 1, 1),
+            (8, '接口管理', 'api_interfaces', 'fas fa-plug', '/admin/api-interfaces', 6, 2, 1),
+            (9, 'AI 引擎', 'ai_engine', 'fas fa-robot', None, None, 4, 1),
+            (10, '模型引擎', 'models', 'fas fa-brain', '/admin/models', 9, 1, 1),
+            (11, '数字员工', 'digital_employees', 'fas fa-user-tie', '/admin/digital-employees', 9, 2, 1),
+            (12, '数据采集', 'data_collect', 'fas fa-satellite-dish', None, None, 5, 1),
+            (13, '瞭望采集', 'watch_collect', 'fas fa-search', '/admin/watch/collect', 12, 1, 1),
+            (14, '数据仓库', 'watch_data', 'fas fa-database', '/admin/watch/data', 12, 2, 1),
+            (15, '智慧舆情', 'sentiment', 'fas fa-chart-pie', None, None, 6, 1),
+            (16, '数智大屏', 'sentiment_dashboard', 'fas fa-globe', '/admin/sentiment/dashboard', 15, 1, 1),
+            (17, '智能舆情', 'sentiment_analysis', 'fas fa-brain', '/admin/sentiment/analysis', 15, 2, 1),
+            (18, '智能聊天', 'im_chat', 'fas fa-comments', None, None, 7, 1),
+            (19, '群管理', 'im_groups', 'fas fa-users-cog', '/admin/im/groups', 18, 1, 1),
+            (20, '文件管理', 'im_files', 'fas fa-file-alt', '/admin/im/files', 18, 2, 1),
+            (21, '服务器管理', 'im_servers', 'fas fa-server', '/admin/im/servers', 18, 3, 1),
         ]
+        # 重建菜单 (先清空避免 code 迁移冲突)
+        conn.execute("DELETE FROM functions")
+        conn.execute("DELETE FROM permissions")
         for func in default_functions:
             conn.execute(
                 """
-                INSERT OR IGNORE INTO functions (id, name, code, icon, url, parent_id, sort_order, is_menu) 
+                INSERT INTO functions (id, name, code, icon, url, parent_id, sort_order, is_menu) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 func
             )
-        conn.execute("UPDATE functions SET parent_id = 14 WHERE id IN (3, 4, 5)")
-        conn.execute("UPDATE functions SET parent_id = 15 WHERE id IN (7, 8)")
-        conn.execute("UPDATE functions SET parent_id = 16 WHERE id IN (17, 18, 19, 20)")
-        
-        # 为超级管理员分配所有权限
         conn.execute(
             """
-            INSERT OR IGNORE INTO permissions (role_id, function_id)
+            INSERT INTO permissions (role_id, function_id)
             SELECT 1, id FROM functions
             """
         )

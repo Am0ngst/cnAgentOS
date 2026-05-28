@@ -277,34 +277,39 @@ class PermissionGetHandler(AdminBaseHandler):
 
 
 class MenuHandler(AdminBaseHandler):
-    """获取当前用户菜单API"""
     @tornado.web.authenticated
     def get(self):
-        # 获取当前用户角色（简化处理，默认使用超级管理员）
-        # 实际项目中应该从用户表中获取role_id
-        role_id = 1  # 超级管理员
-        
-        # 获取该角色的菜单权限
+        username = self.get_secure_cookie("username")
+        if username:
+            username = username.decode("utf-8")
+        role_id = 1
+        if username:
+            from app.models.db import get_connection
+            with get_connection() as conn:
+                row = conn.execute(
+                    "SELECT role_id FROM users WHERE username = ?", (username,)
+                ).fetchone()
+                if row and row["role_id"]:
+                    role_id = row["role_id"]
+
         functions = PermissionRepository.get_role_permissions(role_id)
-        
-        # 构建菜单树
+
         func_map = {}
         menu_tree = []
-        
+
         for func in functions:
             if func['is_menu']:
                 func['children'] = []
                 func_map[func['id']] = func
-        
+
         for func in func_map.values():
             if func['parent_id'] is None:
                 menu_tree.append(func)
             elif func['parent_id'] in func_map:
                 func_map[func['parent_id']]['children'].append(func)
-        
-        # 排序
+
         menu_tree.sort(key=lambda x: x['sort_order'])
         for item in menu_tree:
             item['children'].sort(key=lambda x: x['sort_order'])
-        
+
         self.write({"success": True, "data": menu_tree})

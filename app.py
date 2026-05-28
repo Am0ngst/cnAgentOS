@@ -74,7 +74,7 @@ from app.controllers.im_controller import (
     IMFriendRequestCountHandler, IMPrivateRecallHandler, IMGroupRecallHandler
 )
 from app.controllers.admin_im import (
-    IMGroupListPageHandler, IMGroupListAPIHandler, IMGroupMembersAPIHandler,
+    IMGroupListPageHandler, IMGroupListAPIHandler, IMGroupMembersAPIHandler, IMGroupMessagesAPIHandler, IMAllChatWordsHandler,
     IMFilePageHandler, IMFileAPIHandler,
     IMServerPageHandler, IMServerAPIHandler,
     IMToolPageHandler, IMToolAPIHandler
@@ -238,6 +238,8 @@ def make_app():
         (r"/admin/im/groups", IMGroupListPageHandler),
         (r"/admin/im/groups/api", IMGroupListAPIHandler),
         (r"/admin/im/groups/members", IMGroupMembersAPIHandler),
+        (r"/admin/im/api/group-messages", IMGroupMessagesAPIHandler),
+        (r"/admin/im/api/chat-words", IMAllChatWordsHandler),
         (r"/admin/im/files", IMFilePageHandler),
         (r"/admin/im/files/api", IMFileAPIHandler),
         (r"/admin/im/servers", IMServerPageHandler),

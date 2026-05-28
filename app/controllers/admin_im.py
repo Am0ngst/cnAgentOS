@@ -1,17 +1,17 @@
 import json
 import tornado.web
-from app.controllers.base import BaseHandler
+from app.controllers.admin import AdminBaseHandler
 from app.models.im_model import IMAdminRepository, IMGroupRepository, IMMessageRepository
 from app.models.digital_employee import DigitalEmployeeRepository
 
 
-class IMGroupListPageHandler(BaseHandler):
+class IMGroupListPageHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("admin/im_groups.html")
+        self.render("admin/im_groups.html", title="群管理", username=self.current_user.decode('utf-8'))
 
 
-class IMGroupListAPIHandler(BaseHandler):
+class IMGroupListAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         page = int(self.get_argument("page", "1"))
@@ -43,7 +43,7 @@ class IMGroupListAPIHandler(BaseHandler):
             self.write({"success": False, "message": "未知操作"})
 
 
-class IMGroupMembersAPIHandler(BaseHandler):
+class IMGroupMembersAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         group_id = int(self.get_argument("group_id", "0"))
@@ -51,13 +51,30 @@ class IMGroupMembersAPIHandler(BaseHandler):
         self.write({"success": True, "data": members})
 
 
-class IMFilePageHandler(BaseHandler):
+class IMGroupMessagesAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("admin/im_files.html")
+        group_id = int(self.get_argument("group_id", "0"))
+        page = int(self.get_argument("page", "1"))
+        per_page = 50
+        msgs, total = IMAdminRepository.get_group_messages(group_id, page, per_page)
+        self.write({"success": True, "data": msgs, "total": total})
 
 
-class IMFileAPIHandler(BaseHandler):
+class IMAllChatWordsHandler(AdminBaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        words = IMAdminRepository.get_all_chat_words(200)
+        self.write({"success": True, "data": words})
+
+
+class IMFilePageHandler(AdminBaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("admin/im_files.html", title="文件管理", username=self.current_user.decode('utf-8'))
+
+
+class IMFileAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         page = int(self.get_argument("page", "1"))
@@ -89,13 +106,13 @@ class IMFileAPIHandler(BaseHandler):
             self.write({"success": False, "message": "未知操作"})
 
 
-class IMServerPageHandler(BaseHandler):
+class IMServerPageHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("admin/im_servers.html")
+        self.render("admin/im_servers.html", title="服务器管理", username=self.current_user.decode('utf-8'))
 
 
-class IMServerAPIHandler(BaseHandler):
+class IMServerAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         servers = IMAdminRepository.get_all_servers()
@@ -135,14 +152,14 @@ class IMServerAPIHandler(BaseHandler):
             self.write({"success": False, "message": "未知操作"})
 
 
-class IMToolPageHandler(BaseHandler):
+class IMToolPageHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         employees = DigitalEmployeeRepository.get_all(status=1)
-        self.render("admin/im_tools.html", employees=employees)
+        self.render("admin/im_tools.html", employees=employees, title="工具管理", username=self.current_user.decode('utf-8'))
 
 
-class IMToolAPIHandler(BaseHandler):
+class IMToolAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         page = int(self.get_argument("page", "1"))

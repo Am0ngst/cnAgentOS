@@ -704,3 +704,34 @@ class IMAdminRepository:
                 (status, tool_id)
             )
             return True
+
+    @staticmethod
+    def get_group_messages(group_id, page=1, per_page=50):
+        with get_connection() as conn:
+            total = conn.execute(
+                "SELECT COUNT(*) as cnt FROM im_group_messages WHERE group_id=?", (group_id,)
+            ).fetchone()["cnt"]
+            rows = conn.execute(
+                """SELECT m.*, u.username as from_name
+                   FROM im_group_messages m
+                   LEFT JOIN users u ON m.from_user_id = u.id
+                   WHERE m.group_id = ?
+                   ORDER BY m.create_at ASC LIMIT ? OFFSET ?""",
+                (group_id, per_page, (page - 1) * per_page)
+            ).fetchall()
+            return [dict(r) for r in rows], total
+
+    @staticmethod
+    def get_all_chat_words(limit=300):
+        with get_connection() as conn:
+            rows = conn.execute(
+                """SELECT content FROM (
+                       SELECT content, create_at FROM im_messages WHERE msg_type='text' AND content IS NOT NULL
+                       UNION ALL
+                       SELECT content, create_at FROM im_group_messages WHERE msg_type='text' AND content IS NOT NULL
+                       UNION ALL
+                       SELECT content, create_at FROM conversation_messages WHERE role='user' AND content IS NOT NULL
+                   ) ORDER BY create_at DESC LIMIT ?""", (limit,)
+            ).fetchall()
+            texts = [r["content"] for r in rows if r["content"] and len(r["content"].strip()) > 1]
+            return texts

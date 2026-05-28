@@ -67,7 +67,7 @@
         </div>
     </div>
     <div class="row-bot">
-        <div class="pnl"><div class="pnl-hd"><span style="color:#00d4ff;">■</span> 词云</div><div id="c-wc" class="pnl-ch-sm"></div></div>
+        <div class="pnl"><div class="pnl-hd"><span style="color:#00d4ff;">■</span> 聊天词云</div><div id="c-wc" class="pnl-ch-sm"></div></div>
         <div class="pnl"><div class="pnl-hd"><span style="color:rgba(255,255,255,0.5);">■</span> 近期分析</div>
             <div id="c-recent" style="height:280px;overflow-y:auto;font-size:13px;color:rgba(255,255,255,0.6);">
                 <div style="padding:8px;text-align:center;color:rgba(255,255,255,0.25);">加载中...</div>
@@ -96,7 +96,7 @@
         <div class="fs-main">
             <div class="fs-side">
                 <div class="fs-pnl"><div class="fs-pnl-hd"><span style="color:#00d4ff;">■</span> 用户活跃度</div><div id="fs-active" style="height:200px;"></div></div>
-                <div class="fs-pnl" style="flex:1;"><div class="fs-pnl-hd"><span style="color:#00d4ff;">■</span> 词云</div><div id="fs-wc" style="height:calc(100% - 24px);"></div></div>
+                <div class="fs-pnl" style="flex:1;"><div class="fs-pnl-hd"><span style="color:#00d4ff;">■</span> 聊天词云</div><div id="fs-wc" style="height:calc(100% - 24px);"></div></div>
             </div>
             <div id="fs-globe"></div>
             <div class="fs-side">
@@ -224,7 +224,23 @@ function loadData() {
         if(A.active&&d.user_activity)A.active.setOption({xAxis:{data:d.user_activity.days},series:[{data:d.user_activity.messages},{data:d.user_activity.users}]});
         if(A.kw&&d.top_keywords){var kwNames=d.top_keywords.map(function(k){return k.keyword;});var kwVals=d.top_keywords.map(function(k){return k.count;});A.kw.setOption({yAxis:{data:kwNames},series:[{data:kwVals}]});}
         if(A.modelA&&d.model_usage){var colors=['#aa64ff','#00d4ff','#00ff88','#ffaa00','#ff5078','#4fc3f7','#ff8a65','#69f0ae'];var md=d.model_usage.map(function(m,i){return {value:m.count,name:m.name,itemStyle:{color:colors[i%colors.length]}};});A.modelA.setOption({series:[{data:md.length?md:[{value:1,name:'暂无数据',itemStyle:{color:'rgba(170,100,255,0.2)'}}]}]});}
-        if(A.wc){var wd=[]; if(d.recent_keywords&&d.recent_keywords.length){var freq={};d.recent_keywords.join(',').split(',').forEach(function(w){w=w.trim();if(w)freq[w]=(freq[w]||0)+1;});var maxF=Math.max.apply(null,Object.values(freq))||1;Object.keys(freq).forEach(function(k){wd.push({name:k,value:Math.round(freq[k]/maxF*100)});});}if(!wd.length)wd=[{name:'暂无数据',value:30}];A.wc.setOption({series:[{data:wd}]});}
+        if(A.wc){A.wc.setOption({series:[{data:[{name:'加载中',value:30}]}]});}
+        loadChatWordCloud();
+    });
+}
+function loadChatWordCloud(){
+    fetch('/admin/im/api/chat-words').then(function(r){return r.json()}).then(function(resp){
+        if(!resp.success||!resp.data.length)return;
+        var freq={};
+        resp.data.forEach(function(s){
+            var parts=s.replace(/[^\u4e00-\u9fa5a-zA-Z0-9 ]/g,' ').split(/\s+/);
+            parts.forEach(function(w){w=w.trim();if(w.length>=2)freq[w]=(freq[w]||0)+1;});
+        });
+        var arr=Object.keys(freq).map(function(k){return{name:k,value:freq[k]};});
+        arr.sort(function(a,b){return b.value-a.value;});
+        arr=arr.slice(0,60);
+        if(arr.length){A.wc.setOption({series:[{data:arr}]});}
+        else{A.wc.setOption({series:[{data:[{name:'暂无聊天数据',value:30}]}]});}
     });
 }
 function loadRecent() {
