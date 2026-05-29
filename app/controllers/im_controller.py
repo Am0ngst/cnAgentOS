@@ -2,13 +2,14 @@ import json
 import os
 import time
 import re
+import hashlib
 import tornado.web
 import tornado.gen
 from app.controllers.user_chat import UserBaseHandler
 from app.models.user import UserRepository
 from app.models.im_model import (
     IMContactRepository, IMFriendRequestRepository, IMGroupRepository,
-    IMMessageRepository, UPLOAD_DIR
+    IMMessageRepository, IMAdminRepository, UPLOAD_DIR
 )
 from app.models.digital_employee import DigitalEmployeeRepository
 from app.models.ai_model import AIModelRepository
@@ -537,15 +538,41 @@ class IMFileUploadHandler(UserBaseHandler):
             return self.write({"success": False, "message": "未选择文件"})
         if len(file_info["body"]) > MAX_FILE_SIZE:
             return self.write({"success": False, "message": "文件大小超过50MB限制"})
+
+        file_body = file_info["body"]
+        md5_hash = hashlib.md5(file_body).hexdigest()
         ext = os.path.splitext(file_info["filename"])[1].lower() or ""
-        safe_name = f"{user['id']}_{int(time.time()*1000)}{ext}"
-        file_path = os.path.join(UPLOAD_DIR, safe_name)
-        with open(file_path, "wb") as f:
-            f.write(file_info["body"])
-        file_size = len(file_info["body"])
         is_image = ext in (".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg")
         msg_type = "image" if is_image else "file"
+        file_size = len(file_body)
+
+        reused_path = IMAdminRepository.insert_file_record(
+            md5_hash, file_info["filename"], "", file_size, msg_type, user["id"], "private", 0
+        )
+        if reused_path:
+            self.write({
+                "success": True,
+                "data": {
+                    "file_name": file_info["filename"],
+                    "file_size": file_size,
+                    "file_path": reused_path,
+                    "msg_type": msg_type
+                }
+            })
+            return
+
+        safe_name = f"{user['id']}_{md5_hash}{ext}"
+        file_path = os.path.join(UPLOAD_DIR, safe_name)
+        with open(file_path, "wb") as f:
+            f.write(file_body)
         relative_path = f"/user/im/files/{safe_name}"
+
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE im_files SET file_path = ? WHERE md5_hash = ? AND is_deleted = 0 AND file_path = ''",
+                (relative_path, md5_hash)
+            )
+
         self.write({
             "success": True,
             "data": {
@@ -561,6 +588,11 @@ class IMFileDownloadHandler(UserBaseHandler):
     @tornado.web.authenticated
     def get(self, filename):
         filename = os.path.basename(filename)
+        relative_path = f"/user/im/files/{filename}"
+        deleted = IMAdminRepository.is_file_deleted(relative_path)
+        if deleted:
+            self.set_status(404)
+            return self.write("文件已删除")
         file_path = os.path.join(UPLOAD_DIR, filename)
         if not os.path.isfile(file_path):
             self.set_status(404)

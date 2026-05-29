@@ -48,7 +48,8 @@
 {% block scripts %}
 <script>
 var _currentGroupId = null;
-var _page = 1;
+var _page = 1, _xsrf = '';
+(function(){var m=document.cookie.match('_xsrf=([^;]*)');if(m)_xsrf=m[1];})();
 
 function loadList(){
     var kw = document.getElementById('kwInput').value;
@@ -92,7 +93,7 @@ function sendAnnounce(){
     var content = document.getElementById('announceContent').value.trim();
     if(!content)return alert('请输入公告内容');
     var f = new FormData();
-    f.append('action','announce');f.append('group_id',_currentGroupId);f.append('content',content);
+    f.append('action','announce');f.append('group_id',_currentGroupId);f.append('content',content);f.append('_xsrf',_xsrf);
     fetch('/admin/im/groups/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
         alert(d.message);
         bootstrap.Modal.getInstance(document.getElementById('announceModal')).hide();
@@ -102,14 +103,14 @@ function sendAnnounce(){
 function banGroup(gid){
     if(!confirm('确定对该群执行禁言操作？'))return;
     var f = new FormData();
-    f.append('action','ban');f.append('group_id',gid);f.append('reason','管理员操作');
+    f.append('action','ban');f.append('group_id',gid);f.append('reason','管理员操作');f.append('_xsrf',_xsrf);
     fetch('/admin/im/groups/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
 }
 
 function disbandGroup(gid){
     if(!confirm('确定解散该群聊？此操作不可恢复！'))return;
     var f = new FormData();
-    f.append('action','disband');f.append('group_id',gid);
+    f.append('action','disband');f.append('group_id',gid);f.append('_xsrf',_xsrf);
     fetch('/admin/im/groups/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
 }
 

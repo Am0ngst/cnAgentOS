@@ -43,6 +43,9 @@
 
 {% block scripts %}
 <script>
+var _xsrf = '';
+(function(){var m=document.cookie.match('_xsrf=([^;]*)');if(m)_xsrf=m[1];})();
+
 function loadList(){
     fetch('/admin/im/tools/api').then(r=>r.json()).then(d=>{
         var html = '';
@@ -94,6 +97,7 @@ function saveTool(){
     f.append('config',document.getElementById('tConfig').value);
     var empId = document.getElementById('tEmployee').value;
     if(empId)f.append('employee_id',empId);
+    f.append('_xsrf',_xsrf);
     fetch('/admin/im/tools/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
         alert(d.message);
         bootstrap.Modal.getInstance(document.getElementById('toolModal')).hide();
@@ -103,14 +107,14 @@ function saveTool(){
 
 function toggleTool(id,status){
     var f = new FormData();
-    f.append('action','toggle');f.append('id',id);f.append('status',status?0:1);
+    f.append('action','toggle');f.append('id',id);f.append('status',status?0:1);f.append('_xsrf',_xsrf);
     fetch('/admin/im/tools/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{loadList()});
 }
 
 function deleteTool(id){
     if(!confirm('确定删除该工具？'))return;
     var f = new FormData();
-    f.append('action','delete');f.append('id',id);
+    f.append('action','delete');f.append('id',id);f.append('_xsrf',_xsrf);
     fetch('/admin/im/tools/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
 }
 

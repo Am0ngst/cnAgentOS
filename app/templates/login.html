@@ -10,13 +10,19 @@
         :root{--bg:#0a0e17;--card:rgba(18,24,40,0.95);--accent:#00d4ff;--purple:#a855f7;}
         *{margin:0;padding:0;box-sizing:border-box;}
         body{
-            min-height:100vh;background:var(--bg);
-            background-image:radial-gradient(ellipse at 30% 40%,rgba(0,212,255,0.08) 0%,transparent 60%),
-                           radial-gradient(ellipse at 70% 60%,rgba(168,85,247,0.06) 0%,transparent 60%);
+            min-height:100vh;background:#0a0e17;
+            background-image:url('{{ static_url("img/wallpaper.jpg") }}');
+            background-size:cover;background-position:center;background-repeat:no-repeat;
             display:flex;align-items:center;justify-content:center;
             font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+            position:relative;
         }
-        .card{
+        body::before{
+            content:'';position:absolute;inset:0;
+            background:rgba(10,14,23,0.55);
+            pointer-events:none;
+        }
+        .card{position:relative;z-index:1;
             width:360px;background:var(--card);border:1px solid rgba(255,255,255,0.08);
             border-radius:20px;padding:40px;backdrop-filter:blur(20px);
             box-shadow:0 20px 60px rgba(0,0,0,0.5);text-align:center;

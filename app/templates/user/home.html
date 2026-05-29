@@ -9,12 +9,20 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #0a0e17;
+        background-image: url('{{ static_url("img/image1.jpg") }}');
+        background-size: cover; background-position: center; background-repeat: no-repeat;
         min-height: 100vh;
         display: flex; align-items: center; justify-content: center;
+        position: relative;
+    }
+    body::before {
+        content: ''; position: absolute; inset: 0;
+        background: rgba(10,14,23,0.5);
+        pointer-events: none;
     }
     .home-container {
-        text-align: center; padding: 40px;
+        text-align: center; padding: 40px; position: relative; z-index: 1;
     }
     .home-container h1 {
         color: white; font-size: 32px; margin-bottom: 8px; font-weight: 300;
@@ -46,7 +54,7 @@
     .app-card p { font-size: 13px; color: #999; margin: 0; line-height: 1.6; }
     .user-info {
         position: absolute; top: 24px; right: 32px; color: white;
-        display: flex; align-items: center; gap: 12px; font-size: 14px;
+        display: flex; align-items: center; gap: 12px; font-size: 14px; z-index: 1;
     }
     .user-info .logout-btn {
         color: rgba(255,255,255,0.7); cursor: pointer; text-decoration: none; font-size: 13px;

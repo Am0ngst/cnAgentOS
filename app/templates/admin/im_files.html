@@ -2,60 +2,111 @@
 
 {% block content %}
 <style>
-.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
 .table td{vertical-align:middle}
 .file-preview{width:60px;height:60px;border-radius:8px;object-fit:cover;background:#f0f0f0}
 .file-link{color:#333;text-decoration:none;word-break:break-all}
+.md5-hash{font-family:monospace;font-size:11px;color:#999;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.toolbar{gap:8px;display:flex;flex-wrap:wrap}
 </style>
 <div class="page-header">
     <h4 class="mb-0"><i class="fas fa-folder-open me-2"></i>文件管理</h4>
-    <div>
-        <input class="form-control form-control-sm d-inline-block" style="width:220px" id="kwInput" placeholder="搜索文件名..." onkeyup="if(event.key==='Enter')loadList()">
-        <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadList()">搜索</button>
+    <div class="toolbar">
+        <input class="form-control form-control-sm" style="width:200px" id="kwInput" placeholder="搜索文件名..." onkeyup="if(event.key==='Enter')loadList()">
+        <button class="btn btn-sm btn-outline-primary" onclick="loadList()"><i class="fas fa-search"></i> 搜索</button>
+        <button class="btn btn-sm btn-danger" onclick="batchDelete()" id="batchDelBtn" disabled><i class="fas fa-trash-alt"></i> 批量删除</button>
+        <button class="btn btn-sm btn-warning" onclick="cleanupFiles()"><i class="fas fa-broom"></i> 清理过期</button>
     </div>
 </div>
 <div class="table-responsive">
     <table class="table table-hover">
         <thead class="table-light"><tr>
-            <th>预览</th><th>文件名</th><th>类型</th><th>大小</th><th>来源</th><th>时间</th><th>操作</th>
+            <th style="width:40px"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+            <th>预览</th><th>文件名</th><th>类型</th><th>大小</th><th>MD5</th><th>上传人</th><th>目标</th><th>时间</th><th style="width:140px">操作</th>
         </tr></thead>
         <tbody id="fileTbody"></tbody>
     </table>
 </div>
-<div id="pager" class="text-end mt-3"></div>
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <small class="text-muted">已选择 <span id="selCount">0</span> 个文件</small>
+    <div id="pager"></div>
+</div>
 {% end %}
 
 {% block scripts %}
 <script>
-var _page = 1;
+var _page = 1, _data = [], _xsrf = '';
+(function(){var m=document.cookie.match('_xsrf=([^;]*)');if(m)_xsrf=m[1];})();
 
 function loadList(){
     var kw = document.getElementById('kwInput').value;
     fetch('/admin/im/files/api?page='+_page+'&keyword='+encodeURIComponent(kw)).then(r=>r.json()).then(d=>{
+        _data = d.data || [];
         var html = '';
-        (d.data||[]).forEach(function(f){
+        _data.forEach(function(f){
             var isImg = f.msg_type==='image';
+            var aurl = (f.file_path||'').replace('/user/im/files/', '/admin/im/files/download/');
             html += '<tr>'+
-                '<td>'+(isImg?'<img class="file-preview" src="'+f.file_path+'" onerror="this.src=\'\'">':'<i class="fas fa-file fa-2x text-muted"></i>')+'</td>'+
-                '<td><a class="file-link" href="'+f.file_path+'" target="_blank">'+h(f.file_name||'未命名')+'</a></td>'+
+                '<td><input type="checkbox" class="file-check" value="'+f.id+'" onchange="updateSelect()"></td>'+
+                '<td>'+(isImg
+                    ?'<a href="'+aurl+'" target="_blank" style="display:inline-block"><img class="file-preview" src="'+aurl+'" onerror="this.src=\'\';this.style.display=\'none\'"></a>'
+                    :'<a href="'+aurl+'" target="_blank" style="display:inline-block"><i class="fas fa-file fa-2x text-muted"></i></a>')+'</td>'+
+                '<td><a class="file-link" href="'+aurl+'" target="_blank">'+h(f.file_name||'未命名')+'</a></td>'+
                 '<td><span class="badge '+(isImg?'bg-info':'bg-secondary')+'">'+f.msg_type+'</span></td>'+
                 '<td>'+formatSize(f.file_size||0)+'</td>'+
-                '<td><span class="badge '+(f.source==='private'?'bg-primary':'bg-success')+'">'+(f.source==='private'?'私聊':'群聊')+'</span></td>'+
+                '<td><span class="md5-hash" title="'+h(f.md5_hash||'')+'">'+(f.md5_hash||'').substring(0,12)+'...</span></td>'+
+                '<td>'+h(f.from_username||'-')+'</td>'+
+                '<td><span class="badge '+(f.chat_type==='private'?'bg-primary':'bg-success')+'">'+(f.target_name||(f.chat_type==='private'?'私聊':'群聊'))+'</span></td>'+
                 '<td>'+f.create_at+'</td>'+
-                '<td><button class="btn btn-danger btn-sm" onclick="delFile('+f.id+',\''+f.source+'\')">删除</button></td></tr>';
+                '<td><a class="btn btn-outline-primary btn-sm me-1" href="'+aurl+'" target="_blank" title="预览"><i class="'+ (isImg?'fas fa-eye':'fas fa-download') +'"></i></a>'+
+                '<button class="btn btn-danger btn-sm" onclick="delFile('+f.id+')" title="删除"><i class="fas fa-trash"></i></button></td></tr>';
         });
-        document.getElementById('fileTbody').innerHTML = html || '<tr><td colspan="7" class="text-center text-muted">暂无文件</td></tr>';
+        document.getElementById('fileTbody').innerHTML = html || '<tr><td colspan="10" class="text-center text-muted">暂无文件</td></tr>';
         var pages = Math.ceil((d.total||0)/30)||1;
         var ph = '';
         for(var i=1;i<=pages;i++){ph+='<button class="btn btn-sm '+(i===_page?'btn-primary':'btn-outline-primary')+' me-1" onclick="_page='+i+';loadList()">'+i+'</button>';}
         document.getElementById('pager').innerHTML = ph;
+        document.getElementById('selectAll').checked = false;
+        updateSelect();
     });
 }
 
-function delFile(id,src){
+function toggleSelectAll(){
+    var checked = document.getElementById('selectAll').checked;
+    document.querySelectorAll('.file-check').forEach(function(cb){cb.checked = checked});
+    updateSelect();
+}
+
+function updateSelect(){
+    var checked = document.querySelectorAll('.file-check:checked');
+    document.getElementById('selCount').textContent = checked.length;
+    document.getElementById('batchDelBtn').disabled = checked.length === 0;
+}
+
+function delFile(id){
     if(!confirm('确定删除此文件记录？'))return;
     var f = new FormData();
-    f.append('action','delete');f.append('id',id);f.append('source',src);
+    f.append('action','delete');f.append('id',id);f.append('_xsrf',_xsrf);
+    fetch('/admin/im/files/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
+}
+
+function batchDelete(){
+    var checked = document.querySelectorAll('.file-check:checked');
+    if(checked.length===0){alert('请先选择文件');return}
+    if(!confirm('确定删除选中的 '+checked.length+' 个文件记录？'))return;
+    var ids = [];
+    checked.forEach(function(cb){ids.push(cb.value)});
+    var f = new FormData();
+    f.append('action','batch_delete');f.append('ids', ids.join(','));f.append('_xsrf',_xsrf);
+    fetch('/admin/im/files/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
+}
+
+function cleanupFiles(){
+    var days = prompt('请输入过期天数（超过此天数未访问的文件将被清理）：', '30');
+    if(!days||isNaN(days))return;
+    if(!confirm('确定清理超过 '+days+' 天的文件？此操作不可撤销！'))return;
+    var f = new FormData();
+    f.append('action','cleanup');f.append('days', days);f.append('_xsrf',_xsrf);
     fetch('/admin/im/files/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
 }
 

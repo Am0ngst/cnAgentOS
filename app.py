@@ -15,7 +15,8 @@ from app.controllers.home import IndexHandler
 from app.controllers.admin import (
     AdminLoginHandler, AdminLogoutHandler, AdminIndexHandler, DashboardHandler,
     UserManageHandler, UserCreateHandler, UserUpdateHandler,
-    UserDeleteHandler, UserBatchDeleteHandler, UserCountHandler, UserRolesHandler
+    UserDeleteHandler, UserBatchDeleteHandler, UserCountHandler, UserRolesHandler,
+    AdminChangePasswordHandler
 )
 # 引入RBAC控制器
 from app.controllers.rbac import (
@@ -33,7 +34,8 @@ from app.controllers.model_engine import (
 )
 from app.controllers.watch_engine import (
     WatchCollectHandler, WatchSourceManageHandler, WatchExecuteHandler,
-    WatchDataHandler, WatchDataDeleteHandler, WatchDataBatchDeleteHandler
+    WatchDataHandler, WatchDataDeleteHandler, WatchDataBatchDeleteHandler,
+    WatchScheduleHandler
 )
 from app.controllers.api_interface_mgr import (
     ApiInterfaceHandler, ApiInterfaceCreateHandler,
@@ -56,6 +58,13 @@ from app.controllers.user_chat import (
     UserConversationDeleteHandler,
     UserModelListHandler, UserEmployeeListHandler
 )
+from app.controllers.sentiment import (
+    SentimentDashboardHandler, SentimentStatsHandler,
+    SentimentAnalysisPageHandler, SentimentAnalysisListHandler,
+    SentimentAnalysisDeleteHandler, SentimentAIAnalyzeHandler,
+    EarthTextureProxyHandler,
+    SentimentChatDataHandler, SentimentWatchDataHandler
+)
 from app.controllers.im_controller import (
     IMIndexHandler, IMContactListHandler, IMContactRemoveHandler, IMUserSearchHandler,
     IMFriendRequestSendHandler, IMFriendRequestListHandler, IMFriendRequestHandleHandler,
@@ -68,9 +77,11 @@ from app.controllers.im_controller import (
 )
 from app.controllers.admin_im import (
     IMGroupListPageHandler, IMGroupListAPIHandler, IMGroupMembersAPIHandler,
+    IMGroupMessagesAPIHandler, IMAllChatWordsHandler,
     IMFilePageHandler, IMFileAPIHandler,
     IMServerPageHandler, IMServerAPIHandler,
-    IMToolPageHandler, IMToolAPIHandler
+    IMToolPageHandler, IMToolAPIHandler,
+    AdminFileDownloadHandler
 )
 #引入db - model层
 from app.models.db import init_db
@@ -128,6 +139,7 @@ def make_app():
         (r"/admin/users/batch_delete", UserBatchDeleteHandler),
         (r"/admin/api/users/count", UserCountHandler),
         (r"/admin/api/users/roles", UserRolesHandler),
+        (r"/admin/change-password", AdminChangePasswordHandler),
         # 功能管理路由
         (r"/admin/functions", FunctionManageHandler),
         (r"/admin/functions/create", FunctionCreateHandler),
@@ -159,6 +171,7 @@ def make_app():
         (r"/admin/watch/collect", WatchCollectHandler),
         (r"/admin/watch/sources", WatchSourceManageHandler),
         (r"/admin/watch/execute", WatchExecuteHandler),
+        (r"/admin/watch/schedule", WatchScheduleHandler),
         (r"/admin/watch/data", WatchDataHandler),
         (r"/admin/watch/data/delete", WatchDataDeleteHandler),
         (r"/admin/watch/data/batch_delete", WatchDataBatchDeleteHandler),
@@ -180,6 +193,16 @@ def make_app():
         (r"/admin/watch/deep-crawl/batch", DeepCrawlBatchHandler),
         (r"/admin/watch/deep-crawl/stats", DeepCrawlStatsHandler),
         (r"/admin/watch/deep-crawl/detail", DeepCrawlDetailHandler),
+        # 智慧舆情路由
+        (r"/admin/sentiment/dashboard", SentimentDashboardHandler),
+        (r"/admin/sentiment/api/stats", SentimentStatsHandler),
+        (r"/admin/sentiment/analysis", SentimentAnalysisPageHandler),
+        (r"/admin/sentiment/api/analyses", SentimentAnalysisListHandler),
+        (r"/admin/sentiment/api/analysis-delete", SentimentAnalysisDeleteHandler),
+        (r"/admin/sentiment/api/analyze", SentimentAIAnalyzeHandler),
+        (r"/admin/sentiment/api/earth-texture", EarthTextureProxyHandler),
+        (r"/admin/sentiment/api/chat-data", SentimentChatDataHandler),
+        (r"/admin/sentiment/api/watch-data", SentimentWatchDataHandler),
         # 用户侧路由
         (r"/user/login", UserLoginHandler),
         (r"/user/register", UserRegisterHandler),
@@ -221,8 +244,11 @@ def make_app():
         (r"/admin/im/groups", IMGroupListPageHandler),
         (r"/admin/im/groups/api", IMGroupListAPIHandler),
         (r"/admin/im/groups/members", IMGroupMembersAPIHandler),
+        (r"/admin/im/api/group-messages", IMGroupMessagesAPIHandler),
+        (r"/admin/im/api/chat-words", IMAllChatWordsHandler),
         (r"/admin/im/files", IMFilePageHandler),
         (r"/admin/im/files/api", IMFileAPIHandler),
+        (r"/admin/im/files/download/(.*)", AdminFileDownloadHandler),
         (r"/admin/im/servers", IMServerPageHandler),
         (r"/admin/im/servers/api", IMServerAPIHandler),
         (r"/admin/im/tools", IMToolPageHandler),

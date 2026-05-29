@@ -733,9 +733,9 @@ function showGroupInvite(){
     _groupInviteSelected = new Set();
     fetch('/user/im/group/members?group_id='+chatGroup.id+'&_xsrf='+_xsrf).then(r=>r.json()).then(d=>{
         var existingIds = new Set(d.data.map(m=>m.user_id));
-        var el = document.getElementById('groupInviteList');
         var candidates = friends.filter(f=>!existingIds.has(f.id));
-        if(!candidates.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#ccc">所有好友已在群中</div>';return}
+        if(!candidates.length){showToast('全部好友都已经进群');return}
+        var el = document.getElementById('groupInviteList');
         el.innerHTML = candidates.map((f,i)=>{
             return '<div class="group-create-item" data-id="'+f.id+'" data-name="'+(f.remark||f.username)+'" data-username="'+escapeHtml(f.username)+'" onclick="toggleInviteItem(this,'+f.id+')">'+
                 '<div class="check-circle"><i class="fas fa-check"></i></div>'+

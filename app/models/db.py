@@ -1,6 +1,8 @@
 # 数据库链接与建表
 import os
 import sqlite3
+import hashlib
+import secrets
 
 # 获得项目根路径的方法
 def _project_root():
@@ -138,6 +140,14 @@ def init_db():
             conn.execute("ALTER TABLE im_messages ADD COLUMN emp_alias TEXT DEFAULT NULL")
         except Exception:
             pass
+        try:
+            conn.execute("ALTER TABLE im_messages ADD COLUMN duration INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE im_group_messages ADD COLUMN duration INTEGER DEFAULT 0")
+        except Exception:
+            pass
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS im_chat_servers(
@@ -184,6 +194,27 @@ def init_db():
                 create_at TEXT NOT NULL DEFAULT (datetime('now'))
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS im_files(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                md5_hash TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                file_size INTEGER DEFAULT 0,
+                msg_type TEXT DEFAULT 'file',
+                from_user_id INTEGER NOT NULL,
+                chat_type TEXT NOT NULL DEFAULT 'private',
+                chat_target_id INTEGER DEFAULT 0,
+                ref_count INTEGER DEFAULT 1,
+                is_deleted INTEGER DEFAULT 0,
+                create_at TEXT NOT NULL DEFAULT (datetime('now')),
+                expire_at TEXT DEFAULT NULL
+            )
+        """)
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_im_files_md5 ON im_files(md5_hash)")
+        except Exception:
+            pass
 
         # 功能模块表（菜单）
         conn.execute(
@@ -238,43 +269,56 @@ def init_db():
             VALUES (1, '超级管理员', 'super_admin', '系统超级管理员，拥有所有权限', 1)
             """
         )
+        # 种子默认管理员账号 admin / admin888
+        admin_salt = secrets.token_bytes(16)
+        admin_hash = hashlib.pbkdf2_hmac("sha256", b"admin888", admin_salt, 100000).hex()
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO users (id, username, password_hash, salt, role_id)
+            VALUES (1, 'admin', ?, ?, 1)
+            """,
+            (admin_hash, admin_salt.hex())
+        )
         
-        # 插入默认功能菜单
+        # 插入默认功能菜单  -- 结构: 6个文件夹(用户/配置/AI/采集/舆情/聊天) + 控制台
         default_functions = [
             (1, '控制台', 'dashboard', 'fas fa-tachometer-alt', '/admin/dashboard', None, 1, 1),
-            (2, '用户管理', 'users', 'fas fa-users', '/admin/users', None, 2, 1),
-            (3, '功能管理', 'functions', 'fas fa-cogs', '/admin/functions', None, 3, 1),
-            (4, '角色管理', 'roles', 'fas fa-user-tag', '/admin/roles', None, 4, 1),
-            (5, '权限管理', 'permissions', 'fas fa-key', '/admin/permissions', None, 5, 1),
-            (6, '模型引擎', 'models', 'fas fa-brain', '/admin/models', None, 6, 1),
-            (7, '瞭望采集', 'watch_collect', 'fas fa-search', '/admin/watch/collect', None, 7, 1),
-            (8, '数据仓库', 'watch_data', 'fas fa-database', '/admin/watch/data', None, 8, 1),
-            (9, '接口管理', 'api_interfaces', 'fas fa-plug', '/admin/api-interfaces', None, 9, 1),
-            (10, '数字员工', 'digital_employees', 'fas fa-robot', '/admin/digital-employees', None, 10, 1),
-            (11, '系统管理', 'system_mgmt', 'fas fa-cog', None, None, 3, 1),
-            (12, '数据采集', 'data_collect', 'fas fa-satellite-dish', None, None, 7, 1),
-            (13, '智能聊天', 'im_chat', 'fas fa-comments', None, None, 11, 1),
-            (14, '群管理', 'im_groups', 'fas fa-users', '/admin/im/groups', 13, 1, 1),
-            (15, '文件管理', 'im_files', 'fas fa-folder', '/admin/im/files', 13, 2, 1),
-            (16, '服务器管理', 'im_servers', 'fas fa-server', '/admin/im/servers', 13, 3, 1),
-            (17, '工具管理', 'im_tools', 'fas fa-tools', '/admin/im/tools', 13, 4, 1),
+            (2, '用户权限', 'user_perms', 'fas fa-shield-alt', None, None, 2, 1),
+            (3, '用户管理', 'users', 'fas fa-users', '/admin/users', 2, 1, 1),
+            (4, '角色管理', 'roles', 'fas fa-user-tag', '/admin/roles', 2, 2, 1),
+            (5, '权限管理', 'permissions', 'fas fa-key', '/admin/permissions', 2, 3, 1),
+            (6, '系统配置', 'system_cfg', 'fas fa-cogs', None, None, 3, 1),
+            (7, '功能管理', 'functions', 'fas fa-puzzle-piece', '/admin/functions', 6, 1, 1),
+            (8, '接口管理', 'api_interfaces', 'fas fa-plug', '/admin/api-interfaces', 6, 2, 1),
+            (9, 'AI 引擎', 'ai_engine', 'fas fa-robot', None, None, 4, 1),
+            (10, '模型引擎', 'models', 'fas fa-brain', '/admin/models', 9, 1, 1),
+            (11, '数字员工', 'digital_employees', 'fas fa-user-tie', '/admin/digital-employees', 9, 2, 1),
+            (12, '数据采集', 'data_collect', 'fas fa-satellite-dish', None, None, 5, 1),
+            (13, '瞭望采集', 'watch_collect', 'fas fa-search', '/admin/watch/collect', 12, 1, 1),
+            (14, '数据仓库', 'watch_data', 'fas fa-database', '/admin/watch/data', 12, 2, 1),
+            (15, '智慧舆情', 'sentiment', 'fas fa-chart-pie', None, None, 6, 1),
+            (16, '数智大屏', 'sentiment_dashboard', 'fas fa-globe', '/admin/sentiment/dashboard', 15, 1, 1),
+            (17, '智能舆情', 'sentiment_analysis', 'fas fa-brain', '/admin/sentiment/analysis', 15, 2, 1),
+            (18, '智能聊天', 'im_chat', 'fas fa-comments', None, None, 7, 1),
+            (19, '群管理', 'im_groups', 'fas fa-users-cog', '/admin/im/groups', 18, 1, 1),
+            (20, '文件管理', 'im_files', 'fas fa-file-alt', '/admin/im/files', 18, 2, 1),
+            (21, '服务器管理', 'im_servers', 'fas fa-server', '/admin/im/servers', 18, 3, 1),
+            (22, '修改密码', 'change_password', 'fas fa-lock', '/admin/change-password', 2, 4, 1),
         ]
+        # 重建菜单 (先清空避免 code 迁移冲突)
+        conn.execute("DELETE FROM functions")
+        conn.execute("DELETE FROM permissions")
         for func in default_functions:
             conn.execute(
                 """
-                INSERT OR IGNORE INTO functions (id, name, code, icon, url, parent_id, sort_order, is_menu) 
+                INSERT INTO functions (id, name, code, icon, url, parent_id, sort_order, is_menu) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 func
             )
-        conn.execute("UPDATE functions SET parent_id = 11 WHERE id IN (3, 4, 5)")
-        conn.execute("UPDATE functions SET parent_id = 12 WHERE id IN (7, 8)")
-        conn.execute("UPDATE functions SET parent_id = 13 WHERE id IN (14, 15, 16, 17)")
-        
-        # 为超级管理员分配所有权限
         conn.execute(
             """
-            INSERT OR IGNORE INTO permissions (role_id, function_id)
+            INSERT INTO permissions (role_id, function_id)
             SELECT 1, id FROM functions
             """
         )
@@ -584,6 +628,43 @@ def init_db():
                 content TEXT NOT NULL,
                 msg_type TEXT DEFAULT 'text',
                 extra TEXT DEFAULT NULL,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
+
+        # 智慧舆情分析记录表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sentiment_analysis(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                analysis_type TEXT NOT NULL DEFAULT 'comprehensive',
+                data_source TEXT DEFAULT NULL,
+                prompt TEXT DEFAULT NULL,
+                result TEXT DEFAULT NULL,
+                risk_level TEXT DEFAULT 'low',
+                risk_score REAL DEFAULT 0,
+                keywords TEXT DEFAULT NULL,
+                summary TEXT DEFAULT NULL,
+                status TEXT DEFAULT 'completed',
+                model_used TEXT DEFAULT NULL,
+                tokens_used INTEGER DEFAULT 0,
+                create_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
+
+        # 智慧舆情报告表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sentiment_reports(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                analysis_id INTEGER,
+                report_type TEXT NOT NULL DEFAULT 'daily',
+                title TEXT NOT NULL,
+                content TEXT DEFAULT NULL,
+                chart_data TEXT DEFAULT NULL,
                 create_at TEXT NOT NULL DEFAULT (datetime('now'))
             )
             """

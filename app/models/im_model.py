@@ -320,6 +320,11 @@ class IMMessageRepository:
                    VALUES (?,?,?,?,?,?,?)""",
                 (from_user_id, to_user_id, msg_type, content, file_name, file_size, file_path)
             )
+            if file_path:
+                conn.execute(
+                    "UPDATE im_files SET chat_type = 'private', chat_target_id = ? WHERE file_path = ? AND chat_target_id = 0",
+                    (to_user_id, file_path)
+                )
             return cursor.lastrowid
 
     @staticmethod
@@ -430,6 +435,11 @@ class IMMessageRepository:
                    VALUES (?,?,?,?,?,?,?,?)""",
                 (group_id, from_user_id, msg_type, content, file_name, file_size, file_path, at_employee)
             )
+            if file_path:
+                conn.execute(
+                    "UPDATE im_files SET chat_type = 'group', chat_target_id = ? WHERE file_path = ? AND chat_target_id = 0",
+                    (group_id, file_path)
+                )
             return cursor.lastrowid
 
     @staticmethod
@@ -546,6 +556,25 @@ class IMAdminRepository:
     @staticmethod
     def disband_group_admin(group_id):
         with get_connection() as conn:
+            file_rows = conn.execute(
+                "SELECT file_path FROM im_files WHERE chat_type = 'group' AND chat_target_id = ? AND is_deleted = 0",
+                (group_id,)
+            ).fetchall()
+            for row in file_rows:
+                disk_path = os.path.join(UPLOAD_DIR, os.path.basename(row["file_path"]))
+                if os.path.isfile(disk_path):
+                    try:
+                        os.remove(disk_path)
+                    except Exception:
+                        pass
+                conn.execute(
+                    "UPDATE im_messages SET file_name = NULL, file_path = NULL WHERE file_path = ?",
+                    (row["file_path"],)
+                )
+            conn.execute(
+                "UPDATE im_files SET is_deleted = 1 WHERE chat_type = 'group' AND chat_target_id = ?",
+                (group_id,)
+            )
             conn.execute("DELETE FROM im_group_messages WHERE group_id = ?", (group_id,))
             conn.execute("DELETE FROM im_group_members WHERE group_id = ?", (group_id,))
             conn.execute("DELETE FROM im_groups WHERE id = ?", (group_id,))
@@ -580,40 +609,140 @@ class IMAdminRepository:
     @staticmethod
     def get_all_files(page=1, per_page=30, keyword=""):
         with get_connection() as conn:
-            base = """SELECT id,from_user_id,to_user_id,msg_type,file_name,file_path,file_size,create_at,'private' as source
-                        FROM im_messages WHERE msg_type IN ('file','image')"""
-            base2 = """SELECT id,group_id as to_user_id,from_user_id,msg_type,file_name,file_path,file_size,create_at,'group' as source
-                         FROM im_group_messages WHERE msg_type IN ('file','image')"""
+            count_sql = "SELECT COUNT(*) as cnt FROM im_files WHERE is_deleted = 0"
+            data_sql = """SELECT f.*, u.username as from_username,
+                          CASE WHEN f.chat_type = 'group' THEN g.name ELSE pu.username END as target_name
+                          FROM im_files f
+                          LEFT JOIN users u ON f.from_user_id = u.id
+                          LEFT JOIN im_groups g ON f.chat_type = 'group' AND f.chat_target_id = g.id
+                          LEFT JOIN users pu ON f.chat_type = 'private' AND f.chat_target_id = pu.id
+                          WHERE f.is_deleted = 0"""
             params = []
             if keyword:
                 kw = f"%{keyword}%"
-                base += " AND file_name LIKE ?"
-                base2 += " AND file_name LIKE ?"
-                params = [kw, kw]
-            sql = f"SELECT *, COUNT(*) OVER() as total FROM ({base} UNION ALL {base2}) ORDER BY id DESC LIMIT ? OFFSET ?"
+                count_sql += " AND f.file_name LIKE ?"
+                data_sql += " AND f.file_name LIKE ?"
+                params.append(kw)
+            total = conn.execute(count_sql, params).fetchone()["cnt"]
+            data_sql += " ORDER BY f.id DESC LIMIT ? OFFSET ?"
             params.extend([per_page, (page - 1) * per_page])
-            rows = conn.execute(sql, params).fetchall()
-            if rows:
-                total = rows[0]["total"]
-            else:
-                total = 0
-            result = []
-            seen = set()
-            for r in rows:
-                key = r.get("file_path", "")
-                if key and key in seen:
-                    continue
-                if key:
-                    seen.add(key)
-                result.append(dict(r))
-            return result, total
+            rows = conn.execute(data_sql, params).fetchall()
+            return [dict(r) for r in rows], total
 
     @staticmethod
-    def delete_file_record(file_id, source):
+    def is_file_deleted(file_path):
         with get_connection() as conn:
-            table = "im_messages" if source == "private" else "im_group_messages"
-            conn.execute(f"DELETE FROM {table} WHERE id = ?", (file_id,))
+            row = conn.execute(
+                "SELECT id FROM im_files WHERE file_path = ? AND is_deleted = 0 LIMIT 1",
+                (file_path,)
+            ).fetchone()
+            return row is None
+
+    @staticmethod
+    def delete_file_record(file_id):
+        with get_connection() as conn:
+            row = conn.execute("SELECT file_path FROM im_files WHERE id = ?", (file_id,)).fetchone()
+            if not row:
+                return False
+            file_path_rel = row["file_path"]
+            disk_path = os.path.join(UPLOAD_DIR, os.path.basename(file_path_rel))
+            if os.path.isfile(disk_path):
+                try:
+                    os.remove(disk_path)
+                except Exception:
+                    pass
+            conn.execute(
+                "UPDATE im_messages SET file_name = NULL, file_path = NULL WHERE file_path = ?",
+                (file_path_rel,)
+            )
+            conn.execute(
+                "UPDATE im_group_messages SET file_name = NULL, file_path = NULL WHERE file_path = ?",
+                (file_path_rel,)
+            )
+            conn.execute("UPDATE im_files SET is_deleted = 1 WHERE id = ?", (file_id,))
             return True
+
+    @staticmethod
+    def batch_delete_files(file_ids):
+        with get_connection() as conn:
+            placeholders = ','.join('?' for _ in file_ids)
+            rows = conn.execute(
+                f"SELECT file_path FROM im_files WHERE id IN ({placeholders}) AND is_deleted = 0",
+                file_ids
+            ).fetchall()
+            for row in rows:
+                disk_path = os.path.join(UPLOAD_DIR, os.path.basename(row["file_path"]))
+                if os.path.isfile(disk_path):
+                    try:
+                        os.remove(disk_path)
+                    except Exception:
+                        pass
+                conn.execute(
+                    "UPDATE im_messages SET file_name = NULL, file_path = NULL WHERE file_path = ?",
+                    (row["file_path"],)
+                )
+                conn.execute(
+                    "UPDATE im_group_messages SET file_name = NULL, file_path = NULL WHERE file_path = ?",
+                    (row["file_path"],)
+                )
+            conn.execute(
+                f"UPDATE im_files SET is_deleted = 1 WHERE id IN ({placeholders})",
+                file_ids
+            )
+            return True
+
+    @staticmethod
+    def cleanup_expired_files(days=30):
+        with get_connection() as conn:
+            rows = conn.execute(
+                "SELECT file_path FROM im_files WHERE is_deleted = 0 AND expire_at IS NOT NULL AND datetime(expire_at) < datetime('now')"
+            ).fetchall()
+            for row in rows:
+                disk_path = os.path.join(UPLOAD_DIR, os.path.basename(row["file_path"]))
+                if os.path.isfile(disk_path):
+                    try:
+                        os.remove(disk_path)
+                    except Exception:
+                        pass
+                conn.execute(
+                    "UPDATE im_messages SET file_name = NULL, file_path = NULL WHERE file_path = ?",
+                    (row["file_path"],)
+                )
+                conn.execute(
+                    "UPDATE im_group_messages SET file_name = NULL, file_path = NULL WHERE file_path = ?",
+                    (row["file_path"],)
+                )
+            conn.execute(
+                "UPDATE im_files SET is_deleted = 1 WHERE is_deleted = 0 AND expire_at IS NOT NULL AND datetime(expire_at) < datetime('now')"
+            )
+            conn.execute(
+                "UPDATE im_files SET expire_at = datetime('now', ?) WHERE is_deleted = 0 AND expire_at IS NULL AND datetime(create_at) < datetime('now', ?)",
+                (f"+{days} days", f"-{days} days")
+            )
+            conn.execute(
+                "UPDATE im_files SET is_deleted = 1 WHERE is_deleted = 0 AND expire_at IS NOT NULL AND datetime(expire_at) < datetime('now')"
+            )
+            return True
+
+    @staticmethod
+    def insert_file_record(md5_hash, file_name, file_path, file_size, msg_type, from_user_id, chat_type, chat_target_id):
+        with get_connection() as conn:
+            existing = conn.execute(
+                "SELECT id, file_path, ref_count FROM im_files WHERE md5_hash = ? AND is_deleted = 0 LIMIT 1",
+                (md5_hash,)
+            ).fetchone()
+            if existing:
+                conn.execute(
+                    "UPDATE im_files SET ref_count = ref_count + 1 WHERE id = ?",
+                    (existing["id"],)
+                )
+                return existing["file_path"]
+            conn.execute(
+                """INSERT INTO im_files (md5_hash, file_name, file_path, file_size, msg_type, from_user_id, chat_type, chat_target_id)
+                   VALUES (?,?,?,?,?,?,?,?)""",
+                (md5_hash, file_name, file_path, file_size, msg_type, from_user_id, chat_type, chat_target_id)
+            )
+            return None
 
     @staticmethod
     def get_all_servers():

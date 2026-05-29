@@ -1,17 +1,18 @@
 import json
+import os
 import tornado.web
-from app.controllers.base import BaseHandler
-from app.models.im_model import IMAdminRepository, IMGroupRepository, IMMessageRepository
+from app.controllers.admin import AdminBaseHandler
+from app.models.im_model import IMAdminRepository, IMGroupRepository, IMMessageRepository, UPLOAD_DIR
 from app.models.digital_employee import DigitalEmployeeRepository
 
 
-class IMGroupListPageHandler(BaseHandler):
+class IMGroupListPageHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("admin/im_groups.html")
+        self.render("admin/im_groups.html", title="群管理", username=self.current_user.decode('utf-8'))
 
 
-class IMGroupListAPIHandler(BaseHandler):
+class IMGroupListAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         page = int(self.get_argument("page", "1"))
@@ -43,7 +44,33 @@ class IMGroupListAPIHandler(BaseHandler):
             self.write({"success": False, "message": "未知操作"})
 
 
-class IMGroupMembersAPIHandler(BaseHandler):
+class AdminFileDownloadHandler(AdminBaseHandler):
+    @tornado.web.authenticated
+    def get(self, filename):
+        filename = os.path.basename(filename)
+        relative_path = f"/user/im/files/{filename}"
+        deleted = IMAdminRepository.is_file_deleted(relative_path)
+        if deleted:
+            self.set_status(404)
+            return self.write("文件已删除")
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        if not os.path.isfile(file_path):
+            self.set_status(404)
+            return self.write("文件不存在")
+        ext = os.path.splitext(filename)[1].lower()
+        content_types = {
+            ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+            ".gif": "image/gif", ".bmp": "image/bmp", ".webp": "image/webp",
+            ".svg": "image/svg+xml", ".pdf": "application/pdf",
+            ".zip": "application/zip", ".txt": "text/plain"
+        }
+        self.set_header("Content-Type", content_types.get(ext, "application/octet-stream"))
+        self.set_header("Content-Disposition", f'inline; filename="{filename}"')
+        with open(file_path, "rb") as f:
+            self.write(f.read())
+
+
+class IMGroupMembersAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         group_id = int(self.get_argument("group_id", "0"))
@@ -51,13 +78,30 @@ class IMGroupMembersAPIHandler(BaseHandler):
         self.write({"success": True, "data": members})
 
 
-class IMFilePageHandler(BaseHandler):
+class IMGroupMessagesAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("admin/im_files.html")
+        group_id = int(self.get_argument("group_id", "0"))
+        page = int(self.get_argument("page", "1"))
+        per_page = 50
+        msgs, total = IMAdminRepository.get_group_messages(group_id, page, per_page)
+        self.write({"success": True, "data": msgs, "total": total})
 
 
-class IMFileAPIHandler(BaseHandler):
+class IMAllChatWordsHandler(AdminBaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        words = IMAdminRepository.get_all_chat_words(200)
+        self.write({"success": True, "data": words})
+
+
+class IMFilePageHandler(AdminBaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("admin/im_files.html", title="文件管理", username=self.current_user.decode('utf-8'))
+
+
+class IMFileAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         page = int(self.get_argument("page", "1"))
@@ -67,13 +111,19 @@ class IMFileAPIHandler(BaseHandler):
         for f in files:
             result.append({
                 "id": f["id"],
+                "md5_hash": f.get("md5_hash", ""),
                 "msg_type": f["msg_type"],
                 "file_name": f.get("file_name", ""),
                 "file_path": f.get("file_path", ""),
                 "file_size": f.get("file_size", 0),
                 "create_at": f["create_at"],
-                "source": f["source"],
-                "from_user_id": f["from_user_id"]
+                "expire_at": f.get("expire_at"),
+                "ref_count": f.get("ref_count", 0),
+                "chat_type": f["chat_type"],
+                "chat_target_id": f["chat_target_id"],
+                "from_user_id": f["from_user_id"],
+                "from_username": f.get("from_username", ""),
+                "target_name": f.get("target_name", "")
             })
         self.write({"success": True, "data": result, "total": total})
 
@@ -82,20 +132,35 @@ class IMFileAPIHandler(BaseHandler):
         action = self.get_body_argument("action", "")
         if action == "delete":
             file_id = int(self.get_body_argument("id", "0"))
-            source = self.get_body_argument("source", "private")
-            IMAdminRepository.delete_file_record(file_id, source)
+            IMAdminRepository.delete_file_record(file_id)
             self.write({"success": True, "message": "文件记录已删除"})
+        elif action == "batch_delete":
+            ids_str = self.get_body_argument("ids", "")
+            try:
+                file_ids = [int(x) for x in ids_str.split(",") if x.strip()]
+            except ValueError:
+                self.write({"success": False, "message": "参数错误"})
+                return
+            if not file_ids:
+                self.write({"success": False, "message": "请选择要删除的文件"})
+                return
+            IMAdminRepository.batch_delete_files(file_ids)
+            self.write({"success": True, "message": f"已批量删除 {len(file_ids)} 条记录"})
+        elif action == "cleanup":
+            days = int(self.get_body_argument("days", "30"))
+            IMAdminRepository.cleanup_expired_files(days)
+            self.write({"success": True, "message": f"已清理过期文件"})
         else:
             self.write({"success": False, "message": "未知操作"})
 
 
-class IMServerPageHandler(BaseHandler):
+class IMServerPageHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("admin/im_servers.html")
+        self.render("admin/im_servers.html", title="服务器管理", username=self.current_user.decode('utf-8'))
 
 
-class IMServerAPIHandler(BaseHandler):
+class IMServerAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         servers = IMAdminRepository.get_all_servers()
@@ -135,14 +200,14 @@ class IMServerAPIHandler(BaseHandler):
             self.write({"success": False, "message": "未知操作"})
 
 
-class IMToolPageHandler(BaseHandler):
+class IMToolPageHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         employees = DigitalEmployeeRepository.get_all(status=1)
-        self.render("admin/im_tools.html", employees=employees)
+        self.render("admin/im_tools.html", employees=employees, title="工具管理", username=self.current_user.decode('utf-8'))
 
 
-class IMToolAPIHandler(BaseHandler):
+class IMToolAPIHandler(AdminBaseHandler):
     @tornado.web.authenticated
     def get(self):
         page = int(self.get_argument("page", "1"))

@@ -17,12 +17,7 @@ class AdminLoginHandler(tornado.web.RequestHandler):
         if not username or not password:
             return self.render("admin/login.html", error="用户名或密码不能为空")
         
-        # 验证管理员账号 (admin/admin888)
-        if username == "admin" and password == "admin888":
-            self.set_secure_cookie("admin_user", username)
-            self.redirect("/admin/dashboard")
-        elif UserRepository.verify_user(username, password):
-            # 普通用户也可以登录后台
+        if UserRepository.verify_user(username, password):
             self.set_secure_cookie("admin_user", username)
             self.redirect("/admin/dashboard")
         else:
@@ -215,3 +210,42 @@ class UserRolesHandler(AdminBaseHandler):
             self.write({"success": True, "data": user})
         else:
             self.write({"success": False, "message": "用户不存在"})
+
+
+class AdminChangePasswordHandler(AdminBaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("admin/change_password.html",
+                    title="修改密码",
+                    username=self.current_user.decode('utf-8'),
+                    active_menu="change_password")
+
+    @tornado.web.authenticated
+    def post(self):
+        old_password = self.get_body_argument("old_password", "")
+        new_password = self.get_body_argument("new_password", "")
+        confirm_password = self.get_body_argument("confirm_password", "")
+        username = self.current_user.decode('utf-8')
+
+        if not old_password or not new_password:
+            self.write({"success": False, "message": "密码不能为空"})
+            return
+        if new_password != confirm_password:
+            self.write({"success": False, "message": "两次输入的新密码不一致"})
+            return
+        if len(new_password) < 6:
+            self.write({"success": False, "message": "新密码长度不能少于6位"})
+            return
+        if not UserRepository.verify_user(username, old_password):
+            self.write({"success": False, "message": "原密码错误"})
+            return
+
+        users, _ = UserRepository.get_users_page(1, 1, username)
+        if not users:
+            self.write({"success": False, "message": "用户不存在"})
+            return
+
+        if UserRepository.update_user(users[0]["id"], password=new_password):
+            self.write({"success": True, "message": "密码修改成功，请重新登录"})
+        else:
+            self.write({"success": False, "message": "密码修改失败"})
