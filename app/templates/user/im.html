@@ -1019,7 +1019,7 @@ function sendVoiceMessage(blob){
             gf.append('file_path',info.file_path);
             gf.append('duration',clampDuration(_recordSeconds));
             gf.append('_xsrf',_xsrf);
-            fetch('/user/im/group/send',{method:'POST',body:gf});
+            fetch('/user/im/group/send',{method:'POST',body:gf}).then(r=>r.json()).then(d=>{if(!d.success)alert(d.message)});
         }
         showToast('语音已发送');
     });
@@ -1086,7 +1086,7 @@ function sendTTSVoice(){
             gf.append('msg_type', 'voice');
             gf.append('duration', esDur);
             gf.append('_xsrf', _xsrf);
-            fetch('/user/im/group/send', {method:'POST', body:gf});
+            fetch('/user/im/group/send', {method:'POST', body:gf}).then(r=>r.json()).then(d=>{if(!d.success)alert(d.message)});
         }
         document.getElementById('chatInput').value = '';
         showToast('AI语音消息已发送');
@@ -1549,7 +1549,7 @@ function sendMessage(){
         var f = new FormData();
         f.append('group_id',chatGroup.id);f.append('message',msg);f.append('msg_type','text');f.append('_xsrf',_xsrf);
         if(m)f.append('at_employee',m[1]);
-        fetch('/user/im/group/send',{method:'POST',body:f});
+        fetch('/user/im/group/send',{method:'POST',body:f}).then(r=>r.json()).then(d=>{if(!d.success)alert(d.message)});
     }
 }
 
@@ -1575,7 +1575,7 @@ function uploadFile(input){
             gf.append('group_id',chatGroup.id);gf.append('message','');gf.append('msg_type',info.msg_type);
             gf.append('file_name',info.file_name);gf.append('file_size',info.file_size);gf.append('file_path',info.file_path);
             gf.append('_xsrf',_xsrf);
-            fetch('/user/im/group/send',{method:'POST',body:gf});
+            fetch('/user/im/group/send',{method:'POST',body:gf}).then(r=>r.json()).then(d=>{if(!d.success)alert(d.message)});
         }
     });
     input.value='';

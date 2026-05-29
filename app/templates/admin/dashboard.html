@@ -1,6 +1,126 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+.dash-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: 1px solid #eef0f2;
+    transition: box-shadow 0.2s;
+}
+.stat-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+.stat-card .s-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #fff;
+    flex-shrink: 0;
+}
+.s-icon.blue { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.s-icon.green { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+.s-icon.orange { background: linear-gradient(135deg, #fa709a, #fee140); }
+.s-icon.purple { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+.stat-card .s-num {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+}
+.stat-card .s-lbl {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.quick-links {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+}
+.ql-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    border: 1px solid #eef0f2;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+.ql-card:hover {
+    border-color: #4facfe;
+    box-shadow: 0 4px 12px rgba(79,172,254,0.15);
+    transform: translateY(-1px);
+}
+.ql-card .ql-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+.ql-card .ql-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+.ql-card .ql-desc {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 3px;
+}
+
+.sys-overview {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #eef0f2;
+    padding: 20px 24px;
+}
+.sys-overview h5 {
+    margin: 0 0 14px 0;
+    font-size: 15px;
+    color: #334155;
+}
+.sys-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+.sys-item {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+    border: 1px solid #eef0f2;
+}
+.sys-item .s-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1e293b;
+}
+.sys-item .s-txt {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+</style>
+
 <div class="content-header">
     <h2><i class="fas fa-tachometer-alt me-2"></i>控制台</h2>
     <div class="breadcrumb">
@@ -9,55 +129,78 @@
 </div>
 
 <div class="content-body">
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle me-2"></i>
-        欢迎使用智能瞭望与智能问数系统！后台主页功能正在开发中，敬请期待。
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-md-3 mb-4">
-            <div class="stat-card">
-                <div class="icon blue">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="number" id="userCount">0</div>
-                <div class="label">总用户数</div>
+    <div class="dash-stats">
+        <div class="stat-card">
+            <div class="s-icon blue"><i class="fas fa-users"></i></div>
+            <div>
+                <div class="s-num" id="sUsers">-</div>
+                <div class="s-lbl">总用户数</div>
             </div>
         </div>
-        <div class="col-md-3 mb-4">
-            <div class="stat-card">
-                <div class="icon green">
-                    <i class="fas fa-user-check"></i>
-                </div>
-                <div class="number">0</div>
-                <div class="label">今日活跃</div>
+        <div class="stat-card">
+            <div class="s-icon green"><i class="fas fa-user-check"></i></div>
+            <div>
+                <div class="s-num" id="sActive">-</div>
+                <div class="s-lbl">今日活跃</div>
             </div>
         </div>
-        <div class="col-md-3 mb-4">
-            <div class="stat-card">
-                <div class="icon orange">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="number">0</div>
-                <div class="label">访问量</div>
+        <div class="stat-card">
+            <div class="s-icon orange"><i class="fas fa-comments"></i></div>
+            <div>
+                <div class="s-num" id="sMsgs">-</div>
+                <div class="s-lbl">今日消息</div>
             </div>
         </div>
-        <div class="col-md-3 mb-4">
-            <div class="stat-card">
-                <div class="icon purple">
-                    <i class="fas fa-database"></i>
-                </div>
-                <div class="number">0</div>
-                <div class="label">数据记录</div>
+        <div class="stat-card">
+            <div class="s-icon purple"><i class="fas fa-database"></i></div>
+            <div>
+                <div class="s-num" id="sData">-</div>
+                <div class="s-lbl">数据总量</div>
             </div>
         </div>
     </div>
 
-    <div class="mt-4">
-        <h5 class="mb-3"><i class="fas fa-bell me-2"></i>系统公告</h5>
-        <div class="card">
-            <div class="card-body">
-                <p class="text-muted">暂无公告</p>
+    <div class="quick-links">
+        <a href="/admin/models" class="ql-card">
+            <div class="ql-icon">🧠</div>
+            <div class="ql-title">模型引擎</div>
+            <div class="ql-desc">管理AI大模型配置</div>
+        </a>
+        <a href="/admin/digital-employees" class="ql-card">
+            <div class="ql-icon">🤖</div>
+            <div class="ql-title">数字员工</div>
+            <div class="ql-desc">管理AI助手与API员工</div>
+        </a>
+        <a href="/admin/watch/collect" class="ql-card">
+            <div class="ql-icon">🛰️</div>
+            <div class="ql-title">瞭望采集</div>
+            <div class="ql-desc">全网数据智能采集</div>
+        </a>
+        <a href="/admin/sentiment/dashboard" class="ql-card">
+            <div class="ql-icon">📊</div>
+            <div class="ql-title">数智大屏</div>
+            <div class="ql-desc">智慧舆情指挥中心</div>
+        </a>
+    </div>
+
+    <div class="sys-overview">
+        <h5><i class="fas fa-server me-2"></i>系统概览</h5>
+        <div class="sys-grid">
+            <div class="sys-item">
+                <div class="s-val" id="ovModel">-</div>
+                <div class="s-txt">AI模型</div>
+            </div>
+            <div class="sys-item">
+                <div class="s-val" id="ovEmp">-</div>
+                <div class="s-txt">数字员工</div>
+            </div>
+            <div class="sys-item">
+                <div class="s-val" id="ovApi">-</div>
+                <div class="s-txt">API接口</div>
+            </div>
+            <div class="sys-item">
+                <div class="s-val" id="ovSource">-</div>
+                <div class="s-txt">瞭望采集源</div>
             </div>
         </div>
     </div>
@@ -66,12 +209,20 @@
 
 {% block scripts %}
 <script>
-    // 获取用户数量
-    fetch('/admin/api/users/count')
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('userCount').textContent = data.count || 0;
-        })
-        .catch(err => console.error('获取用户数量失败:', err));
+fetch('/admin/api/dashboard/stats')
+    .then(function(r){return r.json()})
+    .then(function(d){
+        if(!d.success)return;
+        var s=d.data;
+        document.getElementById('sUsers').textContent=s.total_users||0;
+        document.getElementById('sActive').textContent=s.today_active||0;
+        document.getElementById('sMsgs').textContent=s.today_messages||0;
+        document.getElementById('sData').textContent=s.total_data||0;
+        document.getElementById('ovModel').textContent=s.model_count||0;
+        document.getElementById('ovEmp').textContent=s.emp_count||0;
+        document.getElementById('ovApi').textContent=s.api_count||0;
+        document.getElementById('ovSource').textContent=s.source_count||0;
+    })
+    .catch(function(e){console.error(e)});
 </script>
 {% end %}

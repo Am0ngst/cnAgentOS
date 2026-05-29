@@ -115,9 +115,9 @@
 {% end %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+<script src="{{ static_url('js/echarts.min.js') }}"></script>
+<script src="{{ static_url('js/echarts-gl.min.js') }}"></script>
+<script src="{{ static_url('js/echarts-wordcloud.min.js') }}"></script>
 <script>
 var A = {};
 var F = {};

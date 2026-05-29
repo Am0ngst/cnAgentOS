@@ -288,6 +288,14 @@ def init_db():
             SELECT 1, id FROM functions
             """
         )
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO permissions (role_id, function_id)
+            SELECT 3, f.id FROM functions f
+            WHERE f.code NOT IN ('user_perms', 'users', 'roles', 'permissions',
+                                  'system_cfg', 'functions', 'api_interfaces')
+            """
+        )
         
         # 数据库迁移：为旧版users表添加role_id列
         try:
@@ -333,7 +341,7 @@ def init_db():
         conn.execute(
             """
             INSERT OR IGNORE INTO ai_models (id, name, code, api_key, base_url, model_name, description, is_default)
-            VALUES (1, 'DeepSeek V4 Pro', 'deepseek_v4', 'sk-0611a5df2b9449f8bc2eadaa3f9a47a2',
+            VALUES (1, 'DeepSeek V4 Pro', 'deepseek_v4', 'sk-186cd08fc5b4488faac93dd48d072a3a',
                     'https://api.deepseek.com', 'deepseek-chat', 'DeepSeek 高性能大模型', 1)
             """
         )
@@ -557,7 +565,7 @@ def init_db():
             """
         )
 
-        # 插入普通用户和会员角色
+        # 插入普通用户和管理员角色
         conn.execute(
             """
             INSERT OR IGNORE INTO roles (id, name, code, description, is_system)
@@ -567,7 +575,7 @@ def init_db():
         conn.execute(
             """
             INSERT OR IGNORE INTO roles (id, name, code, description, is_system)
-            VALUES (3, '会员', 'vip', '付费会员，享有更多权限(本期预留)', 1)
+            VALUES (3, '管理员', 'vip', '后台管理员，可配置管理权限', 1)
             """
         )
 

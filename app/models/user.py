@@ -40,7 +40,7 @@ class UserRepository:
                 """, 
                 (username,)
             ).fetchone()
-        return row
+        return dict(row) if row else None
 
     # 通过ID获取用户信息
     @staticmethod

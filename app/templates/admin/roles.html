@@ -161,6 +161,8 @@
     let deleteRoleId = null;
     let roleModal = null;
     let deleteModal = null;
+    var _xsrf='';
+    (function(){var m=document.cookie.match('_xsrf=([^;]*)');if(m)_xsrf=m[1];})();
 
     document.addEventListener('DOMContentLoaded', function() {
         roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
@@ -223,6 +225,7 @@
         if (!deleteRoleId) return;
         
         const formData = new FormData();
+        formData.append('_xsrf', _xsrf);
         formData.append('id', deleteRoleId);
         
         fetch('/admin/roles/delete', {

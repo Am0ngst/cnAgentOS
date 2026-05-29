@@ -15,7 +15,8 @@ from app.controllers.home import IndexHandler
 from app.controllers.admin import (
     AdminLoginHandler, AdminLogoutHandler, AdminIndexHandler, DashboardHandler,
     UserManageHandler, UserCreateHandler, UserUpdateHandler,
-    UserDeleteHandler, UserBatchDeleteHandler, UserCountHandler, UserRolesHandler
+    UserDeleteHandler, UserBatchDeleteHandler, UserCountHandler, UserRolesHandler,
+    DashboardStatsHandler
 )
 # 引入RBAC控制器
 from app.controllers.rbac import (
@@ -135,6 +136,7 @@ def make_app():
         (r"/admin/users/delete", UserDeleteHandler),
         (r"/admin/users/batch_delete", UserBatchDeleteHandler),
         (r"/admin/api/users/count", UserCountHandler),
+        (r"/admin/api/dashboard/stats", DashboardStatsHandler),
         (r"/admin/api/users/roles", UserRolesHandler),
         # 功能管理路由
         (r"/admin/functions", FunctionManageHandler),

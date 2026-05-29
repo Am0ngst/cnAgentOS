@@ -35,6 +35,8 @@
 
 {% block scripts %}
 <script>
+var _xsrf='';
+(function(){var m=document.cookie.match('_xsrf=([^;]*)');if(m)_xsrf=m[1];})();
 function loadList(){
     fetch('/admin/im/servers/api').then(r=>r.json()).then(d=>{
         var html = '';
@@ -67,7 +69,7 @@ function openEditor(s){
 function saveServer(){
     var sid = document.getElementById('serverId').value;
     var f = new FormData();
-    f.append('action',sid?'update':'create');
+    f.append('_xsrf',_xsrf);f.append('action',sid?'update':'create');
     if(sid)f.append('id',sid);
     f.append('name',document.getElementById('srvName').value);
     f.append('host',document.getElementById('srvHost').value);
@@ -82,14 +84,14 @@ function saveServer(){
 
 function toggleServer(id,current){
     var f = new FormData();
-    f.append('action','toggle');f.append('id',id);f.append('is_active',current?0:1);
+    f.append('_xsrf',_xsrf);f.append('action','toggle');f.append('id',id);f.append('is_active',current?0:1);
     fetch('/admin/im/servers/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{loadList()});
 }
 
 function deleteServer(id){
     if(!confirm('确定删除该服务器？'))return;
     var f = new FormData();
-    f.append('action','delete');f.append('id',id);
+    f.append('_xsrf',_xsrf);f.append('action','delete');f.append('id',id);
     fetch('/admin/im/servers/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
 }
 

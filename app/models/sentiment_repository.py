@@ -185,26 +185,54 @@ class SentimentRepository:
 
     @staticmethod
     def get_user_activity():
+        import datetime
         with get_connection() as conn:
-            rows = conn.execute(
-                """SELECT date(cm.create_at) as day,
-                       COUNT(*) as msg_count,
-                       COUNT(DISTINCT ch.user_id) as user_count
-                   FROM conversation_messages cm
-                   LEFT JOIN conversation_history ch ON cm.conversation_id = ch.id
-                   WHERE cm.create_at >= date('now', '-6 days')
-                   GROUP BY date(cm.create_at) ORDER BY day"""
-            ).fetchall()
-            import datetime
+            for lookback_days in (6, 29):
+                rows = conn.execute(
+                    """SELECT day, SUM(msg_count) as msg_count,
+                              SUM(user_count) as user_count
+                       FROM (
+                           SELECT date(cm.create_at) as day,
+                                  COUNT(*) as msg_count,
+                                  COUNT(DISTINCT ch.user_id) as user_count
+                           FROM conversation_messages cm
+                           LEFT JOIN conversation_history ch ON cm.conversation_id = ch.id
+                           WHERE cm.create_at >= date('now', :days)
+                           GROUP BY date(cm.create_at)
+                           UNION ALL
+                           SELECT date(create_at) as day,
+                                  COUNT(*) as msg_count,
+                                  COUNT(DISTINCT from_user_id) as user_count
+                           FROM im_messages
+                           WHERE create_at >= date('now', :days2)
+                           GROUP BY date(create_at)
+                           UNION ALL
+                           SELECT date(create_at) as day,
+                                  COUNT(*) as msg_count,
+                                  COUNT(DISTINCT from_user_id) as user_count
+                           FROM im_group_messages
+                           WHERE create_at >= date('now', :days3)
+                           GROUP BY date(create_at)
+                       ) GROUP BY day ORDER BY day""",
+                    {"days": f"-{lookback_days} days", "days2": f"-{lookback_days} days",
+                     "days3": f"-{lookback_days} days"}
+                ).fetchall()
+                if rows:
+                    break
+
             result = {"days": [], "messages": [], "users": []}
             day_map = {r['day']: r for r in rows}
-            for i in range(6, -1, -1):
+            for i in range(lookback_days, -1, -1):
                 d = datetime.date.today() - datetime.timedelta(days=i)
                 ds = d.isoformat()
                 result["days"].append(f"{d.month}/{d.day}")
-                r = day_map.get(ds, {})
-                result["messages"].append(r.get("msg_count", 0) if isinstance(r, dict) else 0)
-                result["users"].append(r.get("user_count", 0) if isinstance(r, dict) else 0)
+                r = day_map.get(ds)
+                if r:
+                    result["messages"].append(r['msg_count'] or 0)
+                    result["users"].append(r['user_count'] or 0)
+                else:
+                    result["messages"].append(0)
+                    result["users"].append(0)
             return result
 
     @staticmethod

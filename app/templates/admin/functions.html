@@ -174,6 +174,8 @@
     let deleteFuncId = null;
     let functionModal = null;
     let deleteModal = null;
+    var _xsrf='';
+    (function(){var m=document.cookie.match('_xsrf=([^;]*)');if(m)_xsrf=m[1];})();
 
     document.addEventListener('DOMContentLoaded', function() {
         functionModal = new bootstrap.Modal(document.getElementById('functionModal'));
@@ -236,6 +238,7 @@
         if (!deleteFuncId) return;
         
         const formData = new FormData();
+        formData.append('_xsrf', _xsrf);
         formData.append('id', deleteFuncId);
         
         fetch('/admin/functions/delete', {

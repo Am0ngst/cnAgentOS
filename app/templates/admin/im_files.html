@@ -28,6 +28,8 @@
 {% block scripts %}
 <script>
 var _page = 1;
+var _xsrf='';
+(function(){var m=document.cookie.match('_xsrf=([^;]*)');if(m)_xsrf=m[1];})();
 
 function loadList(){
     var kw = document.getElementById('kwInput').value;
@@ -55,7 +57,7 @@ function loadList(){
 function delFile(id,src){
     if(!confirm('确定删除此文件记录？'))return;
     var f = new FormData();
-    f.append('action','delete');f.append('id',id);f.append('source',src);
+    f.append('_xsrf',_xsrf);f.append('action','delete');f.append('id',id);f.append('source',src);
     fetch('/admin/im/files/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
 }
 

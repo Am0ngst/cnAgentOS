@@ -105,25 +105,26 @@ class FunctionRepository:
     def get_tree():
         """获取功能树"""
         with get_connection() as conn:
-            # 获取所有功能
             rows = conn.execute(
                 "SELECT * FROM functions WHERE status = 1 ORDER BY sort_order ASC, id ASC"
             ).fetchall()
-            
-            # 构建树结构
+
             func_map = {}
-            root_funcs = []
-            
             for row in rows:
                 func = dict(row)
                 func['children'] = []
                 func_map[func['id']] = func
-                
+
+            root_funcs = []
+            for func in func_map.values():
                 if func['parent_id'] is None:
                     root_funcs.append(func)
                 elif func['parent_id'] in func_map:
                     func_map[func['parent_id']]['children'].append(func)
-            
+
+            root_funcs.sort(key=lambda x: x['sort_order'])
+            for root in root_funcs:
+                root['children'].sort(key=lambda x: x['sort_order'])
             return root_funcs
     
     @staticmethod
@@ -321,6 +322,57 @@ class PermissionRepository:
                 (role_id, function_code)
             ).fetchone()
             return row is not None
+
+    @staticmethod
+    def get_menu_tree(role_id):
+        with get_connection() as conn:
+            direct_ids = set()
+            for row in conn.execute(
+                "SELECT function_id FROM permissions WHERE role_id = ?", (role_id,)
+            ).fetchall():
+                direct_ids.add(row["function_id"])
+
+            if not direct_ids:
+                return []
+
+            all_funcs = conn.execute(
+                "SELECT * FROM functions WHERE status=1 ORDER BY sort_order ASC, id ASC"
+            ).fetchall()
+
+            func_map = {}
+            for row in all_funcs:
+                f = dict(row)
+                f["children"] = []
+                func_map[f["id"]] = f
+
+            expanded_ids = set(direct_ids)
+            for fid in direct_ids:
+                children = [f for f in func_map.values() if f.get("parent_id") == fid]
+                for child in children:
+                    expanded_ids.add(child["id"])
+
+            included = []
+            for f in func_map.values():
+                if f["id"] in expanded_ids:
+                    included.append(f)
+
+            roots = []
+            result_map = {}
+            for f in included:
+                if f.get("is_menu"):
+                    result_map[f["id"]] = f
+                    if f.get("parent_id") is None:
+                        roots.append(f)
+
+            for f in result_map.values():
+                pid = f.get("parent_id")
+                if pid and pid in result_map:
+                    result_map[pid]["children"].append(f)
+
+            roots.sort(key=lambda x: x.get("sort_order", 0))
+            for r in roots:
+                r["children"].sort(key=lambda x: x.get("sort_order", 0))
+            return roots
     
     @staticmethod
     def get_all_with_status(role_id):

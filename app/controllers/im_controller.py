@@ -423,6 +423,16 @@ class IMGroupChatSendHandler(UserBaseHandler):
         at_employee = self.get_body_argument("at_employee", "").strip() or None
         duration = int(self.get_body_argument("duration", "0"))
 
+        from app.models.db import get_connection
+        with get_connection() as conn:
+            banned = conn.execute(
+                "SELECT 1 FROM im_group_bans WHERE group_id=? AND is_active=1 LIMIT 1",
+                (group_id,)
+            ).fetchone()
+        if banned:
+            self.write({"success": False, "message": "该群已被管理员禁言"})
+            return
+
         if msg_type == "image" and file_path:
             file_name = os.path.basename(file_path)
 

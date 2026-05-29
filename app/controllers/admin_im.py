@@ -31,6 +31,10 @@ class IMGroupListAPIHandler(AdminBaseHandler):
             reason = self.get_body_argument("reason", "")
             IMAdminRepository.ban_group(group_id, reason)
             self.write({"success": True, "message": "群聊已禁言"})
+        elif action == "unban":
+            group_id = int(self.get_body_argument("group_id", "0"))
+            IMAdminRepository.unban_group(group_id)
+            self.write({"success": True, "message": "禁言已解除"})
         elif action == "announce":
             group_id = int(self.get_body_argument("group_id", "0"))
             content = self.get_body_argument("content", "").strip()

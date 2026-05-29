@@ -3,7 +3,7 @@ import tornado.web
 import json
 from app.controllers.base import BaseHandler
 from app.models.user import UserRepository
-from app.models.rbac import RoleRepository
+from app.models.rbac import RoleRepository, PermissionRepository
 
 class AdminLoginHandler(tornado.web.RequestHandler):
     """管理员登录页面"""
@@ -17,22 +17,78 @@ class AdminLoginHandler(tornado.web.RequestHandler):
         if not username or not password:
             return self.render("admin/login.html", error="用户名或密码不能为空")
         
-        # 验证管理员账号 (admin/admin888)
         if username == "admin" and password == "admin888":
             self.set_secure_cookie("admin_user", username)
             self.redirect("/admin/dashboard")
-        elif UserRepository.verify_user(username, password):
-            # 普通用户也可以登录后台
-            self.set_secure_cookie("admin_user", username)
-            self.redirect("/admin/dashboard")
-        else:
-            self.render("admin/login.html", error="用户名或密码错误")
+            return
+
+        user = UserRepository.get_user_by_username(username)
+        if not user or not UserRepository.verify_user(username, password):
+            return self.render("admin/login.html", error="用户名或密码错误")
+
+        role_id = user.get("role_id")
+        if not role_id:
+            return self.render("admin/login.html", error="您没有后台管理权限，请联系管理员分配角色")
+
+        if not PermissionRepository.check_permission(role_id, "dashboard"):
+            return self.render("admin/login.html", error="您没有后台管理权限，请联系管理员")
+
+        self.set_secure_cookie("admin_user", username)
+        self.redirect("/admin/dashboard")
 
 class AdminLogoutHandler(BaseHandler):
     """管理员退出"""
     def post(self):
         self.clear_cookie("admin_user")
         self.redirect("/admin/login")
+
+
+PERMISSION_URL_MAP = [
+    ("dashboard", ["/admin/dashboard", "/admin/api/dashboard", "/admin/?", "/admin/api/menu"]),
+    ("users", ["/admin/users", "/admin/api/users"]),
+    ("roles", ["/admin/roles", "/admin/api/roles"]),
+    ("permissions", ["/admin/permissions", "/admin/api/permissions"]),
+    ("functions", ["/admin/functions", "/admin/api/functions"]),
+    ("api_interfaces", ["/admin/api-interfaces"]),
+    ("models", ["/admin/models"]),
+    ("digital_employees", ["/admin/digital-employees", "/admin/digital-chat"]),
+    ("watch_collect", ["/admin/watch/collect", "/admin/watch/sources", "/admin/watch/execute", "/admin/watch/schedule"]),
+    ("watch_data", ["/admin/watch/data", "/admin/watch/deep-crawl"]),
+    ("sentiment_dashboard", ["/admin/sentiment/dashboard", "/admin/sentiment/api/stats", "/admin/sentiment/api/earth-texture"]),
+    ("sentiment_analysis", ["/admin/sentiment/analysis", "/admin/sentiment/api/analyses", "/admin/sentiment/api/analyze", "/admin/sentiment/api/analysis-delete", "/admin/sentiment/api/chat-data", "/admin/sentiment/api/watch-data"]),
+    ("im_groups", ["/admin/im/groups", "/admin/im/api/group-messages", "/admin/im/api/chat-words"]),
+    ("im_files", ["/admin/im/files"]),
+    ("im_servers", ["/admin/im/servers", "/admin/im/tools"]),
+]
+
+
+def _build_source_map():
+    from app.models.db import get_connection
+    with get_connection() as conn:
+        rows = conn.execute("SELECT id, code, parent_id FROM functions WHERE status=1 AND code IS NOT NULL").fetchall()
+    id_to_code = {r["id"]: r["code"] for r in rows}
+    code_to_parent = {}
+    for r in rows:
+        if r["parent_id"] and r["parent_id"] in id_to_code:
+            code_to_parent[r["code"]] = id_to_code[r["parent_id"]]
+    return code_to_parent
+
+SOURCE_PARENT_MAP = _build_source_map()
+
+
+def _check_code_with_parents(role_id, code):
+    if PermissionRepository.check_permission(role_id, code):
+        return True
+    cur = code
+    for _ in range(5):
+        parent = SOURCE_PARENT_MAP.get(cur)
+        if not parent:
+            return False
+        if PermissionRepository.check_permission(role_id, parent):
+            return True
+        cur = parent
+    return False
+
 
 class AdminBaseHandler(BaseHandler):
     """后台管理基础处理器"""
@@ -41,6 +97,41 @@ class AdminBaseHandler(BaseHandler):
 
     def get_login_url(self):
         return "/admin/login"
+
+    def _check_permission(self):
+        user = self.current_user
+        if not user:
+            return True
+        username = user.decode("utf-8") if isinstance(user, bytes) else user
+        if username == "admin":
+            return True
+
+        db_user = UserRepository.get_user_by_username(username)
+        if not db_user or not db_user.get("role_id"):
+            return False
+
+        role_id = db_user["role_id"]
+        path = self.request.path
+
+        required_code = None
+        for code, prefixes in PERMISSION_URL_MAP:
+            for pfx in prefixes:
+                if path == pfx or path.startswith(pfx + "/") or path.startswith(pfx + "?"):
+                    required_code = code
+                    break
+            if required_code:
+                break
+
+        if not required_code:
+            return False
+
+        return _check_code_with_parents(role_id, required_code)
+
+    def prepare(self):
+        if not self._check_permission():
+            self.set_status(403)
+            self.finish("403 Forbidden: 您无此功能的访问权限")
+            return
 
 class AdminIndexHandler(AdminBaseHandler):
     """后台首页重定向"""
@@ -215,3 +306,68 @@ class UserRolesHandler(AdminBaseHandler):
             self.write({"success": True, "data": user})
         else:
             self.write({"success": False, "message": "用户不存在"})
+
+
+class DashboardStatsHandler(AdminBaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        from app.models.db import get_connection
+        with get_connection() as conn:
+            total_users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+
+            today_private = conn.execute(
+                "SELECT COUNT(DISTINCT from_user_id) FROM im_messages WHERE date(create_at)=date('now')"
+            ).fetchone()[0]
+            today_group = conn.execute(
+                "SELECT COUNT(DISTINCT from_user_id) FROM im_group_messages WHERE date(create_at)=date('now')"
+            ).fetchone()[0]
+            today_chat = conn.execute(
+                "SELECT COUNT(DISTINCT ch.user_id) FROM conversation_messages cm LEFT JOIN conversation_history ch ON cm.conversation_id=ch.id WHERE date(cm.create_at)=date('now')"
+            ).fetchone()[0]
+            active_set = set()
+            for uid in conn.execute("SELECT DISTINCT from_user_id FROM im_messages WHERE date(create_at)=date('now')").fetchall():
+                active_set.add(uid[0])
+            for uid in conn.execute("SELECT DISTINCT from_user_id FROM im_group_messages WHERE date(create_at)=date('now')").fetchall():
+                active_set.add(uid[0])
+            for row in conn.execute("SELECT DISTINCT ch.user_id FROM conversation_messages cm LEFT JOIN conversation_history ch ON cm.conversation_id=ch.id WHERE date(cm.create_at)=date('now')").fetchall():
+                if row[0]:
+                    active_set.add(row[0])
+            today_active = len(active_set)
+
+            today_msgs = conn.execute(
+                "SELECT COUNT(*) FROM im_messages WHERE date(create_at)=date('now')"
+            ).fetchone()[0]
+            today_msgs += conn.execute(
+                "SELECT COUNT(*) FROM im_group_messages WHERE date(create_at)=date('now')"
+            ).fetchone()[0]
+            today_msgs += conn.execute(
+                "SELECT COUNT(*) FROM conversation_messages WHERE date(create_at)=date('now')"
+            ).fetchone()[0]
+
+            total_data = conn.execute("SELECT COUNT(*) FROM watch_data").fetchone()[0]
+            total_data += conn.execute("SELECT COUNT(*) FROM conversation_messages").fetchone()[0]
+            total_data += conn.execute("SELECT COUNT(*) FROM im_messages").fetchone()[0]
+            total_data += conn.execute("SELECT COUNT(*) FROM im_group_messages").fetchone()[0]
+
+            model_count = conn.execute("SELECT COUNT(*) FROM ai_models WHERE status=1").fetchone()[0]
+            emp_count = conn.execute("SELECT COUNT(*) FROM digital_employees WHERE status=1").fetchone()[0]
+            api_count = conn.execute("SELECT COUNT(*) FROM api_interfaces WHERE status=1").fetchone()[0]
+            source_count = conn.execute("SELECT COUNT(*) FROM watch_sources WHERE status=1").fetchone()[0]
+            watch_count = conn.execute("SELECT COUNT(*) FROM watch_data").fetchone()[0]
+            crawl_count = conn.execute("SELECT COUNT(*) FROM watch_data WHERE deep_crawl_status=1").fetchone()[0]
+
+        self.write({
+            "success": True,
+            "data": {
+                "total_users": total_users,
+                "today_active": today_active,
+                "today_messages": today_msgs,
+                "total_data": total_data,
+                "model_count": model_count,
+                "emp_count": emp_count,
+                "api_count": api_count,
+                "source_count": source_count,
+                "watch_count": watch_count,
+                "deep_crawl_count": crawl_count,
+            }
+        })

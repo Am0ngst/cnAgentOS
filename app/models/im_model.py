@@ -515,8 +515,9 @@ class IMAdminRepository:
     @staticmethod
     def get_all_groups(page=1, per_page=20, keyword=""):
         with get_connection() as conn:
-            count_sql = "SELECT COUNT(*) as cnt FROM im_groups"
-            data_sql = """SELECT g.*, u.username as owner_name
+            count_sql = "SELECT COUNT(*) as cnt FROM im_groups g"
+            data_sql = """SELECT g.*, u.username as owner_name,
+                                 (SELECT 1 FROM im_group_bans b WHERE b.group_id=g.id AND b.is_active=1 LIMIT 1) as is_banned
                           FROM im_groups g
                           LEFT JOIN users u ON g.owner_id = u.id"""
             params = []
@@ -565,6 +566,19 @@ class IMAdminRepository:
             return True
 
     @staticmethod
+    def unban_group(group_id):
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE im_group_bans SET is_active=0 WHERE group_id=? AND is_active=1",
+                (group_id,)
+            )
+            conn.execute(
+                "INSERT INTO im_group_messages (group_id, from_user_id, msg_type, content, at_employee) VALUES (?,0,'system',?,NULL)",
+                (group_id, "群聊禁言已被管理员解除")
+            )
+            return True
+
+    @staticmethod
     def send_announcement(group_id, content):
         with get_connection() as conn:
             conn.execute(
@@ -593,19 +607,17 @@ class IMAdminRepository:
             sql = f"SELECT *, COUNT(*) OVER() as total FROM ({base} UNION ALL {base2}) ORDER BY id DESC LIMIT ? OFFSET ?"
             params.extend([per_page, (page - 1) * per_page])
             rows = conn.execute(sql, params).fetchall()
-            if rows:
-                total = rows[0]["total"]
-            else:
-                total = 0
+            total = rows[0]["total"] if rows else 0
             result = []
             seen = set()
             for r in rows:
+                r = dict(r)
                 key = r.get("file_path", "")
                 if key and key in seen:
                     continue
                 if key:
                     seen.add(key)
-                result.append(dict(r))
+                result.append(r)
             return result, total
 
     @staticmethod
@@ -726,9 +738,9 @@ class IMAdminRepository:
         with get_connection() as conn:
             rows = conn.execute(
                 """SELECT content FROM (
-                       SELECT content, create_at FROM im_messages WHERE msg_type='text' AND content IS NOT NULL
+                       SELECT content, create_at FROM im_messages WHERE msg_type='text' AND content IS NOT NULL AND (emp_alias IS NULL OR emp_alias='')
                        UNION ALL
-                       SELECT content, create_at FROM im_group_messages WHERE msg_type='text' AND content IS NOT NULL
+                       SELECT content, create_at FROM im_group_messages WHERE msg_type='text' AND content IS NOT NULL AND (at_employee IS NULL OR at_employee='')
                        UNION ALL
                        SELECT content, create_at FROM conversation_messages WHERE role='user' AND content IS NOT NULL
                    ) ORDER BY create_at DESC LIMIT ?""", (limit,)

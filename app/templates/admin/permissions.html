@@ -97,7 +97,10 @@
 
 {% block scripts %}
 <script>
-    function loadPermissions() {
+var _xsrf='';
+(function(){var m=document.cookie.match('_xsrf=([^;]*)');if(m)_xsrf=m[1];})();
+
+function loadPermissions() {
         const roleId = document.getElementById('roleSelect').value;
         if (!roleId) {
             document.getElementById('permissionTree').innerHTML = '<p class="text-muted text-center">请先选择角色</p>';
@@ -211,15 +214,10 @@
         
         // 构建表单数据
         const formData = new FormData();
+        formData.append('_xsrf', _xsrf);
         formData.append('role_id', roleId);
         formData.append('function_ids', functionIds.join(','));
-        
-        // 添加CSRF token
-        const xsrfToken = document.querySelector('input[name="_xsrf"]');
-        if (xsrfToken) {
-            formData.append('_xsrf', xsrfToken.value);
-        }
-        
+
         fetch('/admin/permissions/grant', {
             method: 'POST',
             body: formData

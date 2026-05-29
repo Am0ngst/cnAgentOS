@@ -202,7 +202,7 @@ function editTool(t){
 function saveTool(){
     var tid=document.getElementById('toolId').value;
     var f=new FormData();
-    f.append('action',tid?'update':'create');
+    f.append('_xsrf',_xsrf);f.append('action',tid?'update':'create');
     if(tid)f.append('id',tid);
     f.append('name',document.getElementById('tName').value);
     f.append('code',document.getElementById('tCode').value);
@@ -217,13 +217,13 @@ function saveTool(){
 }
 
 function toggleTool(id,status){
-    var f=new FormData();f.append('action','toggle');f.append('id',id);f.append('status',status?0:1);
+    var f=new FormData();f.append('_xsrf',_xsrf);f.append('action','toggle');f.append('id',id);f.append('status',status?0:1);
     fetch('/admin/im/tools/api',{method:'POST',body:f}).then(function(){loadToolList();});
 }
 
 function deleteTool(id){
     if(!confirm('确定删除该工具？'))return;
-    var f=new FormData();f.append('action','delete');f.append('id',id);
+    var f=new FormData();f.append('_xsrf',_xsrf);f.append('action','delete');f.append('id',id);
     fetch('/admin/im/tools/api',{method:'POST',body:f}).then(function(r){return r.json()}).then(function(d){alert(d.message);loadToolList();});
 }
 
