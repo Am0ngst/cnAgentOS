@@ -313,12 +313,12 @@ class IMGroupRepository:
 class IMMessageRepository:
 
     @staticmethod
-    def send_private(from_user_id, to_user_id, msg_type, content, file_name=None, file_size=0, file_path=None):
+    def send_private(from_user_id, to_user_id, msg_type, content, file_name=None, file_size=0, file_path=None, duration=0):
         with get_connection() as conn:
             cursor = conn.execute(
-                """INSERT INTO im_messages (from_user_id, to_user_id, msg_type, content, file_name, file_size, file_path)
-                   VALUES (?,?,?,?,?,?,?)""",
-                (from_user_id, to_user_id, msg_type, content, file_name, file_size, file_path)
+                """INSERT INTO im_messages (from_user_id, to_user_id, msg_type, content, file_name, file_size, file_path, duration)
+                   VALUES (?,?,?,?,?,?,?,?)""",
+                (from_user_id, to_user_id, msg_type, content, file_name, file_size, file_path, duration)
             )
             if file_path:
                 conn.execute(
@@ -328,12 +328,12 @@ class IMMessageRepository:
             return cursor.lastrowid
 
     @staticmethod
-    def send_private_employee(from_user_id, emp_alias, msg_type, content, file_name=None, file_size=0, file_path=None):
+    def send_private_employee(from_user_id, emp_alias, msg_type, content, file_name=None, file_size=0, file_path=None, duration=0):
         with get_connection() as conn:
             cursor = conn.execute(
-                """INSERT INTO im_messages (from_user_id, to_user_id, msg_type, content, file_name, file_size, file_path, emp_alias)
-                   VALUES (?,?,?,?,?,?,?,?)""",
-                (from_user_id, 0, msg_type, content, file_name, file_size, file_path, emp_alias)
+                """INSERT INTO im_messages (from_user_id, to_user_id, msg_type, content, file_name, file_size, file_path, emp_alias, duration)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (from_user_id, 0, msg_type, content, file_name, file_size, file_path, emp_alias, duration)
             )
             return cursor.lastrowid
 
@@ -428,12 +428,12 @@ class IMMessageRepository:
         return 0
 
     @staticmethod
-    def send_group(group_id, from_user_id, msg_type, content, file_name=None, file_size=0, file_path=None, at_employee=None):
+    def send_group(group_id, from_user_id, msg_type, content, file_name=None, file_size=0, file_path=None, at_employee=None, duration=0):
         with get_connection() as conn:
             cursor = conn.execute(
-                """INSERT INTO im_group_messages (group_id, from_user_id, msg_type, content, file_name, file_size, file_path, at_employee)
-                   VALUES (?,?,?,?,?,?,?,?)""",
-                (group_id, from_user_id, msg_type, content, file_name, file_size, file_path, at_employee)
+                """INSERT INTO im_group_messages (group_id, from_user_id, msg_type, content, file_name, file_size, file_path, at_employee, duration)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (group_id, from_user_id, msg_type, content, file_name, file_size, file_path, at_employee, duration)
             )
             if file_path:
                 conn.execute(
@@ -833,3 +833,34 @@ class IMAdminRepository:
                 (status, tool_id)
             )
             return True
+
+    @staticmethod
+    def get_group_messages(group_id, page=1, per_page=50):
+        with get_connection() as conn:
+            total = conn.execute(
+                "SELECT COUNT(*) as cnt FROM im_group_messages WHERE group_id=?", (group_id,)
+            ).fetchone()["cnt"]
+            rows = conn.execute(
+                """SELECT m.*, u.username as from_name
+                   FROM im_group_messages m
+                   LEFT JOIN users u ON m.from_user_id = u.id
+                   WHERE m.group_id = ?
+                   ORDER BY m.create_at ASC LIMIT ? OFFSET ?""",
+                (group_id, per_page, (page - 1) * per_page)
+            ).fetchall()
+            return [dict(r) for r in rows], total
+
+    @staticmethod
+    def get_all_chat_words(limit=300):
+        with get_connection() as conn:
+            rows = conn.execute(
+                """SELECT content FROM (
+                       SELECT content, create_at FROM im_messages WHERE msg_type='text' AND content IS NOT NULL
+                       UNION ALL
+                       SELECT content, create_at FROM im_group_messages WHERE msg_type='text' AND content IS NOT NULL
+                       UNION ALL
+                       SELECT content, create_at FROM conversation_messages WHERE role='user' AND content IS NOT NULL
+                   ) ORDER BY create_at DESC LIMIT ?""", (limit,)
+            ).fetchall()
+            texts = [r["content"] for r in rows if r["content"] and len(r["content"].strip()) > 1]
+            return texts

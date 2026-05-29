@@ -50,6 +50,9 @@
     }
     .card-icon.ask { background: linear-gradient(135deg, #4facfe, #00f2fe); }
     .card-icon.im { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    .card-icon.gesture { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .gesture-card { cursor: pointer; }
+    .gesture-card.active-gesture { box-shadow: 0 0 0 4px rgba(245,87,108,0.4), 0 10px 40px rgba(0,0,0,0.15); }
     .app-card h3 { font-size: 18px; margin-bottom: 8px; font-weight: 600; }
     .app-card p { font-size: 13px; color: #999; margin: 0; line-height: 1.6; }
     .user-info {
@@ -84,7 +87,141 @@
             <h3>智能聊天</h3>
             <p>仿微信即时通信，好友私聊 · 群聊 · 数字员工</p>
         </a>
+        <div class="app-card gesture-card" id="gestureCard" onclick="toggleGesture()">
+            <div class="card-icon gesture">🖐️</div>
+            <h3>手势交互</h3>
+            <p id="gestureStatus">摄像头手势识别，隔空操控系统</p>
+        </div>
     </div>
 </div>
+
+<script src="{{ static_url('js/gesture.js') }}"></script>
+<script>
+(function() {
+    function toggleGesture() {
+        if (GestureSystem.isRunning()) {
+            GestureSystem.stop();
+            updateGestureCardState(false);
+        } else {
+            GestureSystem.setPageContext('home');
+            GestureSystem.init();
+            updateGestureCardState(true);
+        }
+    }
+
+    function updateGestureCardState(active) {
+        var card = document.getElementById('gestureCard');
+        var status = document.getElementById('gestureStatus');
+        if (active) {
+            card.classList.add('active-gesture');
+            status.textContent = '手势识别中 · 点击关闭';
+        } else {
+            card.classList.remove('active-gesture');
+            status.textContent = '摄像头手势识别，隔空操控系统';
+        }
+    }
+
+    window.toggleGesture = toggleGesture;
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.OPEN_PALM, function(ctx) {
+        if (ctx === 'home') {
+            showShortcutMenu();
+        }
+        console.log('[手势] 手掌张开 → 快捷菜单');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.INDEX_UP, function(ctx) {
+        if (ctx === 'home' || ctx === 'im') {
+            window.location.href = '/user/chat';
+        }
+        console.log('[手势] 食指竖起 → 智能问数');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.INDEX_MIDDLE_UP, function(ctx) {
+        if (ctx === 'home' || ctx === 'chat') {
+            window.location.href = '/user/im';
+        }
+        console.log('[手势] 食中指竖起 → 智能聊天');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.FIST, function(ctx) {
+        var menu = document.getElementById('shortcut-menu-overlay');
+        if (menu) { menu.remove(); return; }
+        if (ctx === 'chat' || ctx === 'im') {
+            window.location.href = '/user/home';
+        }
+        console.log('[手势] 握拳 → 关闭弹窗/返回');
+    });
+
+    function showShortcutMenu() {
+        var existing = document.getElementById('shortcut-menu-overlay');
+        if (existing) {
+            existing.remove();
+            return;
+        }
+
+        var overlay = document.createElement('div');
+        overlay.id = 'shortcut-menu-overlay';
+        overlay.style.cssText =
+            'position:fixed;top:0;left:0;right:0;bottom:0;' +
+            'background:rgba(0,0,0,0.6);z-index:100000;' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'backdrop-filter:blur(6px);';
+        overlay.onclick = function(e) {
+            if (e.target === overlay) overlay.remove();
+        };
+
+        overlay.innerHTML =
+            '<div style="background:rgba(18,24,40,0.98);border-radius:20px;padding:36px;' +
+            'max-width:500px;width:90%;border:1px solid rgba(255,255,255,0.1);' +
+            'box-shadow:0 20px 60px rgba(0,0,0,0.5);">' +
+                '<h3 style="color:#fff;margin-bottom:6px;font-size:20px;text-align:center;">' +
+                    '⌨️ 全局快捷菜单</h3>' +
+                '<p style="color:rgba(255,255,255,0.4);font-size:13px;text-align:center;margin-bottom:20px;">' +
+                    '手势「手掌张开」呼出 · 握拳关闭</p>' +
+                '<div style="display:flex;flex-direction:column;gap:8px;">' +
+                    '<div style="padding:14px 18px;background:rgba(0,212,255,0.08);border-radius:12px;' +
+                    'border:1px solid rgba(0,212,255,0.15);display:flex;align-items:center;gap:14px;' +
+                    'cursor:pointer" onclick="location.href=\'/user/chat\'">' +
+                        '<span style="font-size:24px">🔍</span>' +
+                        '<div><div style="color:#fff;font-size:14px;font-weight:600;">智能问数</div>' +
+                        '<div style="color:rgba(255,255,255,0.4);font-size:12px;">AI数据对话与分析</div></div>' +
+                        '<span style="margin-left:auto;color:rgba(255,255,255,0.2);font-size:12px;">☝️ 手势1</span>' +
+                    '</div>' +
+                    '<div style="padding:14px 18px;background:rgba(168,85,247,0.08);border-radius:12px;' +
+                    'border:1px solid rgba(168,85,247,0.15);display:flex;align-items:center;gap:14px;' +
+                    'cursor:pointer" onclick="location.href=\'/user/im\'">' +
+                        '<span style="font-size:24px">💬</span>' +
+                        '<div><div style="color:#fff;font-size:14px;font-weight:600;">智能聊天</div>' +
+                        '<div style="color:rgba(255,255,255,0.4);font-size:12px;">仿微信即时通信</div></div>' +
+                        '<span style="margin-left:auto;color:rgba(255,255,255,0.2);font-size:12px;">✌️ 手势2</span>' +
+                    '</div>' +
+                    '<div style="padding:14px 18px;background:rgba(239,68,68,0.08);border-radius:12px;' +
+                    'border:1px solid rgba(239,68,68,0.15);display:flex;align-items:center;gap:14px;' +
+                    'cursor:pointer" onclick="location.href=\'/user/home\'">' +
+                        '<span style="font-size:24px">🏠</span>' +
+                        '<div><div style="color:#fff;font-size:14px;font-weight:600;">返回首页</div>' +
+                        '<div style="color:rgba(255,255,255,0.4);font-size:12px;">回到主界面</div></div>' +
+                        '<span style="margin-left:auto;color:rgba(255,255,255,0.2);font-size:12px;">✊ 握拳</span>' +
+                    '</div>' +
+                    '<div style="padding:14px 18px;background:rgba(34,197,94,0.08);border-radius:12px;' +
+                    'border:1px solid rgba(34,197,94,0.15);display:flex;align-items:center;gap:14px;' +
+                    'cursor:pointer" onclick="document.querySelector(\'form[action=\\\'/user/logout\\\']\').submit()">' +
+                        '<span style="font-size:24px">🚪</span>' +
+                        '<div><div style="color:#fff;font-size:14px;font-weight:600;">退出登录</div>' +
+                        '<div style="color:rgba(255,255,255,0.4);font-size:12px;">安全退出系统</div></div>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="text-align:center;margin-top:16px;">' +
+                    '<button onclick="document.getElementById(\'shortcut-menu-overlay\').remove()" ' +
+                    'style="padding:8px 32px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);' +
+                    'border-radius:10px;color:rgba(255,255,255,0.5);font-size:13px;cursor:pointer;">关闭</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(overlay);
+    }
+})();
+</script>
 </body>
 </html>

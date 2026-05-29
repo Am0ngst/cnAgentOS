@@ -1,8 +1,7 @@
 import json
-import os
 import tornado.web
 from app.controllers.admin import AdminBaseHandler
-from app.models.im_model import IMAdminRepository, IMGroupRepository, IMMessageRepository, UPLOAD_DIR
+from app.models.im_model import IMAdminRepository, IMGroupRepository, IMMessageRepository
 from app.models.digital_employee import DigitalEmployeeRepository
 
 
@@ -42,32 +41,6 @@ class IMGroupListAPIHandler(AdminBaseHandler):
             self.write({"success": True, "message": "公告已发送"})
         else:
             self.write({"success": False, "message": "未知操作"})
-
-
-class AdminFileDownloadHandler(AdminBaseHandler):
-    @tornado.web.authenticated
-    def get(self, filename):
-        filename = os.path.basename(filename)
-        relative_path = f"/user/im/files/{filename}"
-        deleted = IMAdminRepository.is_file_deleted(relative_path)
-        if deleted:
-            self.set_status(404)
-            return self.write("文件已删除")
-        file_path = os.path.join(UPLOAD_DIR, filename)
-        if not os.path.isfile(file_path):
-            self.set_status(404)
-            return self.write("文件不存在")
-        ext = os.path.splitext(filename)[1].lower()
-        content_types = {
-            ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
-            ".gif": "image/gif", ".bmp": "image/bmp", ".webp": "image/webp",
-            ".svg": "image/svg+xml", ".pdf": "application/pdf",
-            ".zip": "application/zip", ".txt": "text/plain"
-        }
-        self.set_header("Content-Type", content_types.get(ext, "application/octet-stream"))
-        self.set_header("Content-Disposition", f'inline; filename="{filename}"')
-        with open(file_path, "rb") as f:
-            self.write(f.read())
 
 
 class IMGroupMembersAPIHandler(AdminBaseHandler):
@@ -111,19 +84,13 @@ class IMFileAPIHandler(AdminBaseHandler):
         for f in files:
             result.append({
                 "id": f["id"],
-                "md5_hash": f.get("md5_hash", ""),
                 "msg_type": f["msg_type"],
                 "file_name": f.get("file_name", ""),
                 "file_path": f.get("file_path", ""),
                 "file_size": f.get("file_size", 0),
                 "create_at": f["create_at"],
-                "expire_at": f.get("expire_at"),
-                "ref_count": f.get("ref_count", 0),
-                "chat_type": f["chat_type"],
-                "chat_target_id": f["chat_target_id"],
-                "from_user_id": f["from_user_id"],
-                "from_username": f.get("from_username", ""),
-                "target_name": f.get("target_name", "")
+                "source": f["source"],
+                "from_user_id": f["from_user_id"]
             })
         self.write({"success": True, "data": result, "total": total})
 
@@ -132,24 +99,9 @@ class IMFileAPIHandler(AdminBaseHandler):
         action = self.get_body_argument("action", "")
         if action == "delete":
             file_id = int(self.get_body_argument("id", "0"))
-            IMAdminRepository.delete_file_record(file_id)
+            source = self.get_body_argument("source", "private")
+            IMAdminRepository.delete_file_record(file_id, source)
             self.write({"success": True, "message": "文件记录已删除"})
-        elif action == "batch_delete":
-            ids_str = self.get_body_argument("ids", "")
-            try:
-                file_ids = [int(x) for x in ids_str.split(",") if x.strip()]
-            except ValueError:
-                self.write({"success": False, "message": "参数错误"})
-                return
-            if not file_ids:
-                self.write({"success": False, "message": "请选择要删除的文件"})
-                return
-            IMAdminRepository.batch_delete_files(file_ids)
-            self.write({"success": True, "message": f"已批量删除 {len(file_ids)} 条记录"})
-        elif action == "cleanup":
-            days = int(self.get_body_argument("days", "30"))
-            IMAdminRepository.cleanup_expired_files(days)
-            self.write({"success": True, "message": f"已清理过期文件"})
         else:
             self.write({"success": False, "message": "未知操作"})
 

@@ -620,5 +620,145 @@ document.addEventListener('click', function(e){
     }
 });
 </script>
+
+<script src="{{ static_url('js/gesture.js') }}"></script>
+<script>
+(function() {
+    GestureSystem.setPageContext('chat');
+
+    var gestureToggleBtn = document.createElement('button');
+    gestureToggleBtn.id = 'gestureToggleBtn';
+    gestureToggleBtn.innerHTML = '<i class="fas fa-hand-paper"></i>';
+    gestureToggleBtn.title = '开启手势交互';
+    gestureToggleBtn.style.cssText =
+        'position:fixed;bottom:96px;right:24px;z-index:99991;' +
+        'width:48px;height:48px;border-radius:14px;border:1px solid rgba(255,255,255,0.15);' +
+        'background:rgba(18,24,40,0.9);color:rgba(255,255,255,0.5);font-size:20px;' +
+        'cursor:pointer;transition:all 0.3s;backdrop-filter:blur(8px);' +
+        'display:flex;align-items:center;justify-content:center;';
+    gestureToggleBtn.onmouseenter = function() {
+        this.style.color = '#00d4ff';
+        this.style.borderColor = 'rgba(0,212,255,0.3)';
+    };
+    gestureToggleBtn.onmouseleave = function() {
+        if (!GestureSystem.isRunning()) {
+            this.style.color = 'rgba(255,255,255,0.5)';
+            this.style.borderColor = 'rgba(255,255,255,0.15)';
+        }
+    };
+
+    gestureToggleBtn.onclick = function() {
+        if (GestureSystem.isRunning()) {
+            GestureSystem.stop();
+            this.style.color = 'rgba(255,255,255,0.5)';
+            this.style.borderColor = 'rgba(255,255,255,0.15)';
+            this.innerHTML = '<i class="fas fa-hand-paper"></i>';
+            this.title = '开启手势交互';
+        } else {
+            GestureSystem.setPageContext('chat');
+            GestureSystem.init();
+            this.style.color = '#22c55e';
+            this.style.borderColor = 'rgba(34,197,94,0.3)';
+            this.innerHTML = '<i class="fas fa-hand-paper" style="animation:pulse-gesture 1.5s infinite"></i>';
+            this.title = '关闭手势交互';
+        }
+    };
+    document.body.appendChild(gestureToggleBtn);
+
+    var pulseStyle = document.createElement('style');
+    pulseStyle.textContent = '@keyframes pulse-gesture{0%,100%{opacity:1}50%{opacity:0.5}}';
+    document.head.appendChild(pulseStyle);
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.OPEN_PALM, function(ctx) {
+        if (ctx === 'chat') {
+            showChatShortcutMenu();
+        }
+        console.log('[手势] 手掌张开 → 快捷菜单');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.INDEX_UP, function(ctx) {
+        if (ctx === 'chat') {
+            console.log('[手势] 食指竖起 → 已在智能问数页面');
+        }
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.INDEX_MIDDLE_UP, function(ctx) {
+        if (ctx === 'chat') {
+            window.location.href = '/user/im';
+        }
+        console.log('[手势] 食中指竖起 → 智能聊天');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.OK, function(ctx) {
+        if (ctx === 'chat') {
+            var input = document.getElementById('chatInput');
+            if (input && input.value.trim()) {
+                if (typeof sendMessage === 'function') {
+                    try { sendMessage(); } catch(e) {}
+                }
+            } else {
+                try { newChat(); } catch(e) {}
+            }
+        }
+        console.log('[手势] OK → 确认/新建对话');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.FIST, function(ctx) {
+        if (ctx === 'chat') {
+            var menu = document.getElementById('shortcut-menu-overlay');
+            if (menu) { menu.remove(); return; }
+            window.location.href = '/user/home';
+        }
+        console.log('[手势] 握拳 → 返回首页');
+    });
+
+    function showChatShortcutMenu() {
+        var existing = document.getElementById('shortcut-menu-overlay');
+        if (existing) { existing.remove(); return; }
+
+        var overlay = document.createElement('div');
+        overlay.id = 'shortcut-menu-overlay';
+        overlay.style.cssText =
+            'position:fixed;top:0;left:0;right:0;bottom:0;' +
+            'background:rgba(0,0,0,0.6);z-index:100000;' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'backdrop-filter:blur(6px);';
+        overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+        overlay.innerHTML =
+            '<div style="background:rgba(18,24,40,0.98);border-radius:20px;padding:36px;' +
+            'max-width:460px;width:90%;border:1px solid rgba(255,255,255,0.1);' +
+            'box-shadow:0 20px 60px rgba(0,0,0,0.5);">' +
+                '<h3 style="color:#fff;margin-bottom:6px;font-size:20px;text-align:center;">⌨️ 快捷菜单</h3>' +
+                '<p style="color:rgba(255,255,255,0.4);font-size:12px;text-align:center;margin-bottom:20px;">' +
+                    '🖐️ 手掌张开呼出 · ✊ 握拳关闭</p>' +
+                '<div style="display:flex;flex-direction:column;gap:8px;">' +
+                    '<div onclick="document.getElementById(\'shortcut-menu-overlay\').remove();newChat()" ' +
+                    'style="padding:14px 18px;background:rgba(0,212,255,0.08);border-radius:12px;' +
+                    'border:1px solid rgba(0,212,255,0.15);cursor:pointer;display:flex;align-items:center;gap:12px;">' +
+                        '<span style="font-size:22px">➕</span><span style="color:#fff;font-size:14px;">新建对话</span>' +
+                        '<span style="margin-left:auto;color:rgba(255,255,255,0.2);font-size:11px;">👌 OK</span></div>' +
+                    '<div onclick="window.location.href=\'/user/im\'" ' +
+                    'style="padding:14px 18px;background:rgba(168,85,247,0.08);border-radius:12px;' +
+                    'border:1px solid rgba(168,85,247,0.15);cursor:pointer;display:flex;align-items:center;gap:12px;">' +
+                        '<span style="font-size:22px">💬</span><span style="color:#fff;font-size:14px;">智能聊天</span>' +
+                        '<span style="margin-left:auto;color:rgba(255,255,255,0.2);font-size:11px;">✌️ 手势2</span></div>' +
+                    '<div onclick="window.location.href=\'/user/home\'" ' +
+                    'style="padding:14px 18px;background:rgba(239,68,68,0.08);border-radius:12px;' +
+                    'border:1px solid rgba(239,68,68,0.15);cursor:pointer;display:flex;align-items:center;gap:12px;">' +
+                        '<span style="font-size:22px">🏠</span><span style="color:#fff;font-size:14px;">返回首页</span>' +
+                        '<span style="margin-left:auto;color:rgba(255,255,255,0.2);font-size:11px;">✊ 握拳</span></div>' +
+                '</div>' +
+                '<div style="text-align:center;margin-top:16px;">' +
+                    '<button onclick="document.getElementById(\'shortcut-menu-overlay\').remove()" ' +
+                    'style="padding:8px 28px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);' +
+                    'border-radius:10px;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;">关闭</button>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+    }
+
+})();
+</script>
 </body>
 </html>

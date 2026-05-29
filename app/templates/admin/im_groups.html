@@ -1,4 +1,4 @@
-{% extends "admin/base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <style>
@@ -43,6 +43,17 @@
         </div>
     </div></div>
 </div>
+<div class="modal fade" id="msgModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header"><h5>群聊记录</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body" id="msgBody" style="max-height:65vh;background:#f8f9fa;">
+        </div>
+        <div class="modal-footer justify-content-between">
+            <small class="text-muted" id="msgPageInfo"></small>
+            <div><button class="btn btn-sm btn-outline-primary me-1" id="msgPrevBtn">上一页</button><button class="btn btn-sm btn-outline-primary" id="msgNextBtn">下一页</button></div>
+        </div>
+    </div></div>
+</div>
 {% end %}
 
 {% block scripts %}
@@ -59,6 +70,7 @@ function loadList(){
             html += '<tr><td>'+g.id+'</td><td>'+h(g.name)+'</td><td>'+h(g.owner_name||'')+'</td><td>'+g.create_at+'</td>'+
                 '<td class="actions">'+
                 '<button class="btn btn-outline-info btn-sm" onclick="showMembers('+g.id+')">成员</button>'+
+                '<button class="btn btn-outline-primary btn-sm" onclick="showMessages('+g.id+')">聊天记录</button>'+
                 '<button class="btn btn-outline-warning btn-sm" onclick="showAnnounce('+g.id+')">公告</button>'+
                 '<button class="btn btn-outline-danger btn-sm" onclick="banGroup('+g.id+')">禁言</button>'+
                 '<button class="btn btn-danger btn-sm" onclick="disbandGroup('+g.id+')">解散</button></td></tr>';
@@ -114,8 +126,32 @@ function disbandGroup(gid){
     fetch('/admin/im/groups/api',{method:'POST',body:f}).then(r=>r.json()).then(d=>{alert(d.message);loadList()});
 }
 
-function h(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
 
+var _msgGroupId=null, _msgPage=1;
+function showMessages(gid){
+    _msgGroupId=gid;_msgPage=1;
+    loadMsgs();
+    new bootstrap.Modal(document.getElementById('msgModal')).show();
+    document.getElementById('msgPrevBtn').onclick=function(){if(_msgPage>1){_msgPage--;loadMsgs();}};
+    document.getElementById('msgNextBtn').onclick=function(){_msgPage++;loadMsgs();};
+}
+function loadMsgs(){
+    fetch('/admin/im/api/group-messages?group_id='+_msgGroupId+'&page='+_msgPage).then(function(r){return r.json()}).then(function(d){
+        if(!d||!d.success)return;
+        var html='';
+        (d.data||[]).forEach(function(m){
+            var bubbleStyle=m.from_user_id===0?'background:#fff3cd;border:1px solid #ffc107':'background:#fff;border:1px solid #dee2e6';
+            var align=m.from_user_id===0?'text-center':'';
+            var name=m.from_user_id===0?'<b>[系统]</b>':'<b style="color:#0d6efd">'+h(m.from_name||'用户#'+m.from_user_id)+'</b>';
+            html+='<div style="margin-bottom:8px;padding:8px 12px;border-radius:8px;'+bubbleStyle+';'+align+'">'+
+                '<div style="font-size:12px;margin-bottom:4px;">'+name+'<small class="text-muted ms-2">'+m.create_at+'</small></div>'+
+                '<div>'+h(m.content)+'</div></div>';
+        });
+        document.getElementById('msgBody').innerHTML=html||'<div class="text-center text-muted py-4">暂无消息</div>';
+        document.getElementById('msgPageInfo').textContent='第 '+_msgPage+' 页 / 共 '+Math.ceil((d.total||1)/50)+' 页';
+    });
+}
 loadList();
 </script>
 {% end %}

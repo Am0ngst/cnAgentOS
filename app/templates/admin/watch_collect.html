@@ -308,6 +308,37 @@
         border-color: var(--watch-accent);
         color: var(--watch-accent);
     }
+
+    .schedule-module{margin-top:20px;border-top:1px solid rgba(255,255,255,0.06);padding-top:18px}
+    .schedule-header{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:6px}
+    .schedule-type-badge{font-size:11px;padding:3px 10px;border-radius:10px;background:rgba(0,212,255,0.15);color:var(--watch-accent);margin-left:auto}
+    .schedule-type-badge.scheduled{background:rgba(168,85,247,0.2);color:var(--watch-purple)}
+    .schedule-trigger{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-radius:12px;cursor:pointer;color:rgba(255,255,255,0.3);font-size:12px;transition:all .3s}
+    .schedule-trigger:hover{color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.02)}
+    .schedule-body{padding:16px 0 8px}
+    .schedule-toggle-row{margin-bottom:16px;display:flex;justify-content:center}
+    .toggle-switch-wrapper{display:flex;align-items:center;gap:14px}
+    .toggle-label{font-size:13px;color:rgba(255,255,255,0.5);transition:color .3s}
+    .toggle-label.active{color:var(--watch-accent);font-weight:600}
+    .switch{position:relative;display:inline-block;width:46px;height:26px}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.1);transition:.3s;border-radius:26px}
+    .slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background:var(--watch-accent);transition:.3s;border-radius:50%}
+    .switch input:checked+.slider{background:rgba(168,85,247,0.2)}
+    .switch input:checked+.slider:before{transform:translateX(20px);background:var(--watch-purple)}
+    .schedule-input-row{margin-bottom:14px}
+    .time-digit-group{display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap}
+    .time-digit{width:52px;padding:10px 6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;text-align:center;font-size:16px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;outline:none;transition:all .3s;-moz-appearance:textfield}
+    .time-digit::-webkit-inner-spin-button,.time-digit::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+    .time-digit:focus{border-color:var(--watch-accent);box-shadow:0 0 12px rgba(0,212,255,0.15);background:rgba(0,212,255,0.06)}
+    .time-digit::placeholder{color:rgba(255,255,255,0.15);font-weight:400;font-size:13px}
+    .time-sep{color:rgba(255,255,255,0.25);font-size:18px;font-weight:300;padding:0 1px}
+    .schedule-start-btn{display:block;width:100%;padding:12px;border-radius:30px;background:linear-gradient(135deg,var(--watch-accent),var(--watch-purple));border:none;color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;letter-spacing:1px}
+    .schedule-start-btn:hover{transform:scale(1.02);box-shadow:0 0 24px var(--watch-glow)}
+    .schedule-start-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+    .schedule-status{margin-top:12px;padding:10px 14px;border-radius:10px;font-size:12px;text-align:center;background:rgba(168,85,247,0.1);color:var(--watch-purple);border:1px solid rgba(168,85,247,0.2)}
+    .schedule-status.done{background:rgba(34,211,238,0.1);color:var(--watch-green);border-color:rgba(34,211,238,0.2)}
+    .schedule-status .countdown-timer{font-size:22px;font-weight:700;font-family:'SF Mono','Cascadia Code','Consolas',monospace;display:block;margin:6px 0;color:#fff}
 </style>
 
 <div class="watch-wrapper">
@@ -347,6 +378,57 @@
                 <span><i class="fas fa-cog me-1"></i>采集页数:</span>
                 <input type="number" class="param-input" id="pageCount" value="1" min="1" max="20">
                 <span style="opacity:0.5;">(每页约10条)</span>
+            </div>
+
+            <div class="schedule-module" id="scheduleModule">
+                <div class="schedule-header">
+                    <i class="fas fa-clock me-2"></i>定时采集
+                    <span class="schedule-type-badge" id="scheduleTypeBadge">立刻采集</span>
+                </div>
+                <div class="schedule-body" id="scheduleBody" style="display:none">
+                    <div class="schedule-toggle-row">
+                        <div class="toggle-switch-wrapper">
+                            <span class="toggle-label" id="toggleLabelBeijing">北京时间定时</span>
+                            <label class="switch">
+                                <input type="checkbox" id="scheduleToggle" onchange="switchScheduleMode()">
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="toggle-label" id="toggleLabelCountdown">倒计时</span>
+                        </div>
+                    </div>
+                    <div class="schedule-input-row" id="beijingInputs">
+                        <div class="time-digit-group">
+                            <input type="number" class="time-digit" id="bjYear" min="2024" max="2124" placeholder="年">
+                            <span class="time-sep">-</span>
+                            <input type="number" class="time-digit" id="bjMonth" min="1" max="12" placeholder="月">
+                            <span class="time-sep">-</span>
+                            <input type="number" class="time-digit" id="bjDay" min="1" max="31" placeholder="日">
+                            <span class="time-sep">&nbsp;</span>
+                            <input type="number" class="time-digit" id="bjHour" min="0" max="23" placeholder="时">
+                            <span class="time-sep">:</span>
+                            <input type="number" class="time-digit" id="bjMin" min="0" max="59" placeholder="分">
+                            <span class="time-sep">:</span>
+                            <input type="number" class="time-digit" id="bjSec" min="0" max="59" placeholder="秒">
+                        </div>
+                    </div>
+                    <div class="schedule-input-row" id="countdownInputs" style="display:none">
+                        <div class="time-digit-group">
+                            <input type="number" class="time-digit" id="cdHour" min="0" max="8760" value="0" placeholder="时">
+                            <span class="time-sep">:</span>
+                            <input type="number" class="time-digit" id="cdMin" min="0" max="59" value="0" placeholder="分">
+                            <span class="time-sep">:</span>
+                            <input type="number" class="time-digit" id="cdSec" min="0" max="59" value="0" placeholder="秒">
+                        </div>
+                    </div>
+                    <button class="schedule-start-btn" id="scheduleStartBtn" onclick="startSchedule()">
+                        <i class="fas fa-hourglass-start me-2"></i>开始定时
+                    </button>
+                    <div class="schedule-status" id="scheduleStatus" style="display:none"></div>
+                </div>
+                <div class="schedule-trigger" id="scheduleTrigger" onclick="toggleSchedule()">
+                    <span id="scheduleTriggerText">设置定时采集</span>
+                    <i class="fas fa-chevron-down" id="scheduleChevron"></i>
+                </div>
             </div>
         </div>
 
@@ -440,12 +522,207 @@
 {% block scripts %}
 <script>
 var _xsrf='';
+var _scheduleMode='beijing';
+var _scheduleTimer=null;
+var _scheduleActive=false;
+
 document.addEventListener('DOMContentLoaded',()=>{
     var m=document.cookie.match('_xsrf=([^;]*)');
     if(m)_xsrf=m[1];
     new bootstrap.Modal(document.getElementById('sourceModal'));
     new bootstrap.Modal(document.getElementById('sourceFormModal'));
+    initBeijingTime();
 });
+
+function playDing(){
+    try{
+        var ctx=new(window.AudioContext||window.webkitAudioContext)();
+        var now=ctx.currentTime;
+        var g=ctx.createGain();
+        g.connect(ctx.destination);
+        g.gain.setValueAtTime(0,now);
+        g.gain.linearRampToValueAtTime(0.25,now+0.02);
+        g.gain.setValueAtTime(0.25,now+0.06);
+        g.gain.linearRampToValueAtTime(0,now+0.3);
+        var o1=ctx.createOscillator();
+        o1.type='sine';
+        o1.frequency.setValueAtTime(800,now);
+        o1.frequency.setValueAtTime(1050,now+0.08);
+        o1.connect(g);
+        o1.start(now);
+        o1.stop(now+0.28);
+        var o2=ctx.createOscillator();
+        o2.type='sine';
+        o2.frequency.setValueAtTime(1050,now+0.08);
+        o2.frequency.setValueAtTime(1400,now+0.16);
+        o2.connect(g);
+        o2.start(now+0.08);
+        o2.stop(now+0.28);
+        setTimeout(function(){ctx.close();},400);
+    }catch(e){}
+}
+
+function initBeijingTime(){
+    var now=new Date();
+    document.getElementById('bjYear').value=now.getFullYear();
+    document.getElementById('bjMonth').value=String(now.getMonth()+1).padStart(2,'0');
+    document.getElementById('bjDay').value=String(now.getDate()).padStart(2,'0');
+    document.getElementById('bjHour').value=String(now.getHours()).padStart(2,'0');
+    document.getElementById('bjMin').value=String(now.getMinutes()).padStart(2,'0');
+    document.getElementById('bjSec').value=String(now.getSeconds()).padStart(2,'0');
+}
+
+function toggleSchedule(){
+    var body=document.getElementById('scheduleBody');
+    var chevron=document.getElementById('scheduleChevron');
+    var text=document.getElementById('scheduleTriggerText');
+    if(body.style.display==='none'){
+        body.style.display='block';
+        chevron.className='fas fa-chevron-up';
+        text.textContent='收起定时设置';
+        initBeijingTime();
+    }else{
+        body.style.display='none';
+        chevron.className='fas fa-chevron-down';
+        text.textContent='设置定时采集';
+    }
+}
+
+function switchScheduleMode(){
+    var checked=document.getElementById('scheduleToggle').checked;
+    var beijingEl=document.getElementById('beijingInputs');
+    var cdEl=document.getElementById('countdownInputs');
+    var lb=document.getElementById('toggleLabelBeijing');
+    var lc=document.getElementById('toggleLabelCountdown');
+
+    if(checked){
+        _scheduleMode='countdown';
+        beijingEl.style.display='none';
+        cdEl.style.display='block';
+        lb.classList.remove('active');
+        lc.classList.add('active');
+    }else{
+        _scheduleMode='beijing';
+        beijingEl.style.display='block';
+        cdEl.style.display='none';
+        lb.classList.add('active');
+        lc.classList.remove('active');
+    }
+}
+
+function startSchedule(){
+    if(_scheduleActive)return;
+    var kw=document.getElementById('watchKeyword').value.trim();
+    if(!kw){alert('请输入关键词');return;}
+    var checks=document.querySelectorAll('#sourceToggles input[type=checkbox]:checked');
+    if(checks.length===0){alert('请选择采集源');return;}
+    var ids=Array.from(checks).map(c=>c.value).join(',');
+    var pc=document.getElementById('pageCount').value||1;
+
+    var scheduleType='now';
+    var targetTime='';
+    var countdownSeconds=0;
+
+    if(document.getElementById('scheduleBody').style.display!=='none'){
+        if(_scheduleMode==='beijing'){
+            var y=parseInt(document.getElementById('bjYear').value)||0;
+            var mo=parseInt(document.getElementById('bjMonth').value)||0;
+            var d=parseInt(document.getElementById('bjDay').value)||0;
+            var h=parseInt(document.getElementById('bjHour').value)||0;
+            var mi=parseInt(document.getElementById('bjMin').value)||0;
+            var s=parseInt(document.getElementById('bjSec').value)||0;
+            if(!y||!mo||!d){alert('请填写完整的北京时间');return;}
+            targetTime=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')+
+                ' '+String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0')+':'+String(s).padStart(2,'0');
+            scheduleType='beijing';
+        }else{
+            var ch=parseInt(document.getElementById('cdHour').value)||0;
+            var cm=parseInt(document.getElementById('cdMin').value)||0;
+            var cs=parseInt(document.getElementById('cdSec').value)||0;
+            countdownSeconds=ch*3600+cm*60+cs;
+            if(countdownSeconds<=0){alert('请设置倒计时时间');return;}
+            scheduleType='countdown';
+        }
+    }
+
+    var f=new FormData();
+    f.append('keyword',kw);
+    f.append('source_ids',ids);
+    f.append('page_count',pc);
+    f.append('schedule_type',scheduleType);
+    f.append('_xsrf',_xsrf);
+    if(scheduleType==='beijing')f.append('target_time',targetTime);
+    if(scheduleType==='countdown')f.append('countdown_seconds',String(countdownSeconds));
+
+    var btn=document.getElementById('scheduleStartBtn');
+    btn.disabled=true;
+    btn.innerHTML='<i class="fas fa-spinner fa-pulse me-2"></i>设置中...';
+
+    fetch('/admin/watch/schedule',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            if(scheduleType==='now'){
+                playDing();
+                var list=document.getElementById('resultList');
+                list.innerHTML='<div class="collect-status" style="color:var(--watch-green);"><i class="fas fa-check-circle fa-3x mb-3 d-block"></i>'+d.message+'</div>';
+                setTimeout(function(){location.href='/admin/watch/data';},2500);
+            }else{
+                var statusEl=document.getElementById('scheduleStatus');
+                statusEl.style.display='block';
+                var badge=document.getElementById('scheduleTypeBadge');
+                badge.textContent='等待中';
+                badge.classList.add('scheduled');
+                _scheduleActive=true;
+                startLocalCountdown(d.delay_seconds);
+                statusEl.innerHTML='<span>'+d.message+'</span><span class="countdown-timer" id="countdownDisplay"></span>';
+            }
+        }else{
+            alert(d.message);
+        }
+        btn.disabled=false;
+        btn.innerHTML='<i class="fas fa-hourglass-start me-2"></i>开始定时';
+    }).catch(function(e){
+        alert('网络错误: '+e.message);
+        btn.disabled=false;
+        btn.innerHTML='<i class="fas fa-hourglass-start me-2"></i>开始定时';
+    });
+}
+
+function startLocalCountdown(totalSec){
+    var remaining=totalSec;
+    var display=document.getElementById('countdownDisplay');
+    updateCountdownDisplay(remaining);
+
+    _scheduleTimer=setInterval(function(){
+        remaining--;
+        if(remaining<=0){
+            clearInterval(_scheduleTimer);
+            _scheduleTimer=null;
+            playDing();
+            var statusEl=document.getElementById('scheduleStatus');
+            statusEl.classList.add('done');
+            statusEl.innerHTML='<i class="fas fa-check-circle me-1"></i>采集时间到！正在进行自动采集...';
+            var badge=document.getElementById('scheduleTypeBadge');
+            badge.textContent='采集中';
+            badge.classList.remove('scheduled');
+            _scheduleActive=false;
+            setTimeout(function(){location.href='/admin/watch/data';},3000);
+        }else{
+            updateCountdownDisplay(remaining);
+        }
+    },1000);
+}
+
+function updateCountdownDisplay(sec){
+    var display=document.getElementById('countdownDisplay');
+    if(!display)return;
+    var h=Math.floor(sec/3600);
+    var m=Math.floor((sec%3600)/60);
+    var s=sec%60;
+    display.textContent=
+        String(h).padStart(2,'0')+':'+
+        String(m).padStart(2,'0')+':'+
+        String(s).padStart(2,'0');
+}
 
 function startCollect(){
     var kw=document.getElementById('watchKeyword').value.trim();

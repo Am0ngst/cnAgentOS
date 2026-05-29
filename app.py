@@ -15,8 +15,7 @@ from app.controllers.home import IndexHandler
 from app.controllers.admin import (
     AdminLoginHandler, AdminLogoutHandler, AdminIndexHandler, DashboardHandler,
     UserManageHandler, UserCreateHandler, UserUpdateHandler,
-    UserDeleteHandler, UserBatchDeleteHandler, UserCountHandler, UserRolesHandler,
-    AdminChangePasswordHandler
+    UserDeleteHandler, UserBatchDeleteHandler, UserCountHandler, UserRolesHandler
 )
 # 引入RBAC控制器
 from app.controllers.rbac import (
@@ -76,12 +75,10 @@ from app.controllers.im_controller import (
     IMFriendRequestCountHandler, IMPrivateRecallHandler, IMGroupRecallHandler
 )
 from app.controllers.admin_im import (
-    IMGroupListPageHandler, IMGroupListAPIHandler, IMGroupMembersAPIHandler,
-    IMGroupMessagesAPIHandler, IMAllChatWordsHandler,
+    IMGroupListPageHandler, IMGroupListAPIHandler, IMGroupMembersAPIHandler, IMGroupMessagesAPIHandler, IMAllChatWordsHandler,
     IMFilePageHandler, IMFileAPIHandler,
     IMServerPageHandler, IMServerAPIHandler,
-    IMToolPageHandler, IMToolAPIHandler,
-    AdminFileDownloadHandler
+    IMToolPageHandler, IMToolAPIHandler
 )
 #引入db - model层
 from app.models.db import init_db
@@ -139,7 +136,6 @@ def make_app():
         (r"/admin/users/batch_delete", UserBatchDeleteHandler),
         (r"/admin/api/users/count", UserCountHandler),
         (r"/admin/api/users/roles", UserRolesHandler),
-        (r"/admin/change-password", AdminChangePasswordHandler),
         # 功能管理路由
         (r"/admin/functions", FunctionManageHandler),
         (r"/admin/functions/create", FunctionCreateHandler),
@@ -248,7 +244,6 @@ def make_app():
         (r"/admin/im/api/chat-words", IMAllChatWordsHandler),
         (r"/admin/im/files", IMFilePageHandler),
         (r"/admin/im/files/api", IMFileAPIHandler),
-        (r"/admin/im/files/download/(.*)", AdminFileDownloadHandler),
         (r"/admin/im/servers", IMServerPageHandler),
         (r"/admin/im/servers/api", IMServerAPIHandler),
         (r"/admin/im/tools", IMToolPageHandler),

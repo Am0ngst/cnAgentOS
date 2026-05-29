@@ -1,8 +1,6 @@
 # 数据库链接与建表
 import os
 import sqlite3
-import hashlib
-import secrets
 
 # 获得项目根路径的方法
 def _project_root():
@@ -194,27 +192,6 @@ def init_db():
                 create_at TEXT NOT NULL DEFAULT (datetime('now'))
             )
         """)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS im_files(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                md5_hash TEXT NOT NULL,
-                file_name TEXT NOT NULL,
-                file_path TEXT NOT NULL,
-                file_size INTEGER DEFAULT 0,
-                msg_type TEXT DEFAULT 'file',
-                from_user_id INTEGER NOT NULL,
-                chat_type TEXT NOT NULL DEFAULT 'private',
-                chat_target_id INTEGER DEFAULT 0,
-                ref_count INTEGER DEFAULT 1,
-                is_deleted INTEGER DEFAULT 0,
-                create_at TEXT NOT NULL DEFAULT (datetime('now')),
-                expire_at TEXT DEFAULT NULL
-            )
-        """)
-        try:
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_im_files_md5 ON im_files(md5_hash)")
-        except Exception:
-            pass
 
         # 功能模块表（菜单）
         conn.execute(
@@ -269,16 +246,6 @@ def init_db():
             VALUES (1, '超级管理员', 'super_admin', '系统超级管理员，拥有所有权限', 1)
             """
         )
-        # 种子默认管理员账号 admin / admin888
-        admin_salt = secrets.token_bytes(16)
-        admin_hash = hashlib.pbkdf2_hmac("sha256", b"admin888", admin_salt, 100000).hex()
-        conn.execute(
-            """
-            INSERT OR IGNORE INTO users (id, username, password_hash, salt, role_id)
-            VALUES (1, 'admin', ?, ?, 1)
-            """,
-            (admin_hash, admin_salt.hex())
-        )
         
         # 插入默认功能菜单  -- 结构: 6个文件夹(用户/配置/AI/采集/舆情/聊天) + 控制台
         default_functions = [
@@ -303,7 +270,6 @@ def init_db():
             (19, '群管理', 'im_groups', 'fas fa-users-cog', '/admin/im/groups', 18, 1, 1),
             (20, '文件管理', 'im_files', 'fas fa-file-alt', '/admin/im/files', 18, 2, 1),
             (21, '服务器管理', 'im_servers', 'fas fa-server', '/admin/im/servers', 18, 3, 1),
-            (22, '修改密码', 'change_password', 'fas fa-lock', '/admin/change-password', 2, 4, 1),
         ]
         # 重建菜单 (先清空避免 code 迁移冲突)
         conn.execute("DELETE FROM functions")
