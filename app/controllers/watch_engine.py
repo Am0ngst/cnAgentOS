@@ -1,6 +1,10 @@
 import json
 import re
+import time
+import datetime
+import threading
 import tornado.web
+import tornado.ioloop
 import urllib.parse
 import requests
 from html import unescape
@@ -307,3 +311,151 @@ class WatchDataBatchDeleteHandler(AdminBaseHandler):
             self.write({"success": True, "message": f"已删除 {count} 条数据"})
         else:
             self.write({"success": False, "message": "请选择数据"})
+
+
+_schedule_store = {}
+_schedule_lock = threading.Lock()
+
+
+def _execute_collect(keyword, source_ids, page_count):
+    ids = [int(x) for x in source_ids.split(",") if x.strip().isdigit()]
+    if not ids:
+        return {"success": False, "message": "请选择采集源"}
+
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Referer': 'https://www.baidu.com/',
+        'Connection': 'keep-alive',
+        'Cache-Control': 'max-age=0',
+    })
+
+    try:
+        session.get('https://www.baidu.com/', timeout=10)
+    except Exception:
+        pass
+
+    total_collected = 0
+    for sid in ids:
+        source = WatchSourceRepository.get_by_id(sid)
+        if not source or not source.get("status"):
+            continue
+        try:
+            url_tpl = source["url_template"]
+            page_param = source.get("page_param") or "pn"
+            for pn in range(1, page_count + 1):
+                url = url_tpl.replace("{keyword}", urllib.parse.quote(keyword))
+                url = url.replace("{pn}", str(pn))
+                try:
+                    resp = session.get(url, timeout=15)
+                    resp.encoding = resp.apparent_encoding or "utf-8"
+                    html = resp.text
+                except Exception:
+                    continue
+                items = _parse_generic_all(html)
+                for item in items:
+                    WatchDataRepository.create(
+                        keyword=keyword,
+                        source_url=url,
+                        title=item.get("title", "")[:500],
+                        content=item.get("url", ""),
+                    )
+                    total_collected += 1
+        except Exception:
+            continue
+
+    return {"success": True, "message": f"采集完成，共采集 {total_collected} 条数据", "total": total_collected}
+
+
+class WatchScheduleHandler(AdminBaseHandler):
+    @tornado.web.authenticated
+    def post(self):
+        keyword = self.get_body_argument("keyword", "").strip()
+        source_ids = self.get_body_argument("source_ids", "").strip()
+        page_count = int(self.get_body_argument("page_count", "1"))
+        schedule_type = self.get_body_argument("schedule_type", "now")
+
+        if not keyword or not source_ids:
+            return self.write({"success": False, "message": "请输入关键词并选择采集源"})
+
+        if schedule_type == "now":
+            result = _execute_collect(keyword, source_ids, page_count)
+            self.write(result)
+            return
+
+        schedule_id = str(int(time.time() * 1000))
+        delay_seconds = 0
+        target_time_str = ""
+
+        if schedule_type == "beijing":
+            target_time_str = self.get_body_argument("target_time", "")
+            try:
+                target_dt = datetime.datetime.strptime(target_time_str, "%Y-%m-%d %H:%M:%S")
+                now_dt = datetime.datetime.now()
+                delay_seconds = (target_dt - now_dt).total_seconds()
+                if delay_seconds < 0:
+                    return self.write({"success": False, "message": "目标时间已过，请选择未来时间"})
+                if delay_seconds > 365 * 24 * 3600:
+                    return self.write({"success": False, "message": "定时不能超过一年"})
+            except ValueError:
+                return self.write({"success": False, "message": "时间格式错误，请使用 YYYY-MM-DD HH:MM:SS"})
+
+        elif schedule_type == "countdown":
+            countdown_seconds = int(self.get_body_argument("countdown_seconds", "0"))
+            if countdown_seconds <= 0:
+                return self.write({"success": False, "message": "倒计时必须大于0秒"})
+            if countdown_seconds > 365 * 24 * 3600:
+                return self.write({"success": False, "message": "倒计时不能超过一年"})
+            delay_seconds = countdown_seconds
+            target_time_str = f"倒计时 {countdown_seconds} 秒"
+
+        else:
+            return self.write({"success": False, "message": "不支持的定时类型"})
+
+        with _schedule_lock:
+            _schedule_store[schedule_id] = {
+                "keyword": keyword,
+                "source_ids": source_ids,
+                "page_count": page_count,
+                "schedule_type": schedule_type,
+                "target_time": target_time_str,
+                "status": "waiting",
+            }
+
+        def _delayed_execute(sid):
+            with _schedule_lock:
+                if sid not in _schedule_store:
+                    return
+                _schedule_store[sid]["status"] = "running"
+            try:
+                result = _execute_collect(keyword, source_ids, page_count)
+            except Exception as e:
+                result = {"success": False, "message": str(e)}
+            with _schedule_lock:
+                if sid in _schedule_store:
+                    _schedule_store[sid]["status"] = "done"
+                    _schedule_store[sid]["result"] = result
+
+        tornado.ioloop.IOLoop.current().call_later(delay_seconds, _delayed_execute, schedule_id)
+
+        self.write({
+            "success": True,
+            "message": f"定时采集已设置，将在 {int(delay_seconds)} 秒后执行",
+            "schedule_id": schedule_id,
+            "delay_seconds": int(delay_seconds),
+            "target_time": target_time_str,
+        })
+
+    @tornado.web.authenticated
+    def get(self):
+        schedule_id = self.get_argument("schedule_id", "")
+        if not schedule_id:
+            return self.write({"success": False, "message": "缺少 schedule_id"})
+        with _schedule_lock:
+            info = _schedule_store.get(schedule_id)
+        if not info:
+            return self.write({"success": False, "message": "任务不存在或已过期"})
+        self.write({"success": True, "data": info})

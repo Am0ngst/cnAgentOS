@@ -138,6 +138,14 @@ def init_db():
             conn.execute("ALTER TABLE im_messages ADD COLUMN emp_alias TEXT DEFAULT NULL")
         except Exception:
             pass
+        try:
+            conn.execute("ALTER TABLE im_messages ADD COLUMN duration INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE im_group_messages ADD COLUMN duration INTEGER DEFAULT 0")
+        except Exception:
+            pass
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS im_chat_servers(

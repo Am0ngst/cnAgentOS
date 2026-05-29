@@ -114,7 +114,6 @@
         padding: 24px;
         margin-bottom: 30px;
         backdrop-filter: blur(20px);
-        overflow: visible;
     }
     .source-panel h3 {
         color: rgba(255,255,255,0.7);
@@ -310,264 +309,36 @@
         color: var(--watch-accent);
     }
 
-    .schedule-section {
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid rgba(255,255,255,0.06);
-        overflow: visible;
-    }
-    .schedule-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 16px;
-    }
-    .schedule-header h3 {
-        color: rgba(255,255,255,0.7);
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        margin-bottom: 0;
-    }
-    .toggle-switch {
-        position: relative;
-        width: 52px;
-        height: 28px;
-        display: inline-block;
-    }
-    .toggle-switch input { display: none; }
-    .toggle-slider {
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(255,255,255,0.08);
-        border-radius: 28px;
-        cursor: pointer;
-        transition: all 0.3s;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-    .toggle-slider:before {
-        content: '';
-        position: absolute;
-        height: 20px; width: 20px;
-        left: 3px; bottom: 3px;
-        background: rgba(255,255,255,0.4);
-        border-radius: 50%;
-        transition: all 0.3s;
-    }
-    .toggle-switch input:checked + .toggle-slider {
-        background: rgba(0,212,255,0.25);
-        border-color: var(--watch-accent);
-        box-shadow: 0 0 12px var(--watch-glow);
-    }
-    .toggle-switch input:checked + .toggle-slider:before {
-        transform: translateX(24px);
-        background: var(--watch-accent);
-    }
-
-    .schedule-body {
-        display: none;
-        animation: fadeSlideIn 0.35s ease;
-        overflow: visible;
-        position: relative;
-        z-index: 5;
-    }
-    .schedule-body.active {
-        display: block;
-    }
-    @keyframes fadeSlideIn {
-        from { opacity: 0; transform: translateY(-8px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .mode-switch-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-    }
-    .mode-label {
-        color: rgba(255,255,255,0.4);
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    .mode-toggle-btn {
-        position: relative;
-        width: 120px;
-        height: 36px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 20px;
-        cursor: pointer;
-        overflow: hidden;
-        transition: all 0.3s;
-        padding: 0;
-    }
-    .mode-toggle-btn .toggle-track {
-        position: absolute;
-        top: 2px; left: 2px;
-        width: 58px; height: 30px;
-        background: linear-gradient(135deg, var(--watch-accent), var(--watch-purple));
-        border-radius: 18px;
-        transition: transform 0.3s ease;
-    }
-    .mode-toggle-btn.countdown .toggle-track {
-        transform: translateX(56px);
-    }
-    .mode-toggle-btn .toggle-text {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-around;
-        font-size: 11px;
-        font-weight: 600;
-        z-index: 1;
-        pointer-events: none;
-    }
-    .mode-toggle-btn .toggle-text span {
-        width: 60px;
-        text-align: center;
-        transition: color 0.3s;
-    }
-    .mode-toggle-btn .toggle-text .active-text {
-        color: white;
-    }
-    .mode-toggle-btn .toggle-text .inactive-text {
-        color: rgba(255,255,255,0.3);
-    }
-
-    .datetime-picker-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-    .datetime-picker-row label {
-        color: rgba(255,255,255,0.5);
-        font-size: 13px;
-        margin: 0;
-        min-width: 70px;
-    }
-    .datetime-input-group {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-    .datetime-input-group select,
-    .datetime-input-group input[type="number"] {
-        background: rgba(255,255,255,0.88);
-        border: 1px solid rgba(255,255,255,0.2);
-        border-radius: 10px;
-        color: #000;
-        padding: 8px 10px;
-        font-size: 14px;
-        outline: none;
-        text-align: center;
-        transition: all 0.3s;
-        appearance: none;
-        -webkit-appearance: none;
-    }
-    .datetime-input-group select option {
-        color: #000;
-        background: #fff;
-    }
-    .datetime-input-group select {
-        padding-right: 24px;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23333'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 8px center;
-        cursor: pointer;
-    }
-    .datetime-input-group select:focus,
-    .datetime-input-group input[type="number"]:focus {
-        border-color: var(--watch-accent);
-        box-shadow: 0 0 12px rgba(0,212,255,0.15);
-    }
-    .datetime-separator {
-        color: rgba(255,255,255,0.3);
-        font-size: 16px;
-        font-weight: bold;
-    }
-
-    .countdown-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-    .countdown-row label {
-        color: rgba(255,255,255,0.5);
-        font-size: 13px;
-        margin: 0;
-    }
-    .countdown-input-group {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .countdown-input-group input[type="number"] {
-        width: 64px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 10px;
-        color: white;
-        padding: 8px 10px;
-        font-size: 15px;
-        text-align: center;
-        outline: none;
-        transition: all 0.3s;
-    }
-    .countdown-input-group input[type="number"]:focus {
-        border-color: var(--watch-accent);
-        box-shadow: 0 0 12px rgba(0,212,255,0.15);
-    }
-    .countdown-input-group .cd-unit {
-        color: rgba(255,255,255,0.4);
-        font-size: 12px;
-        text-transform: uppercase;
-    }
-
-    .schedule-status {
-        margin-top: 16px;
-        padding: 12px 18px;
-        border-radius: 12px;
-        font-size: 13px;
-        display: none;
-        align-items: center;
-        gap: 10px;
-        background: rgba(0,212,255,0.08);
-        border: 1px solid rgba(0,212,255,0.15);
-        color: var(--watch-accent);
-    }
-    .schedule-status.active {
-        display: flex;
-    }
-    .schedule-status .status-dot {
-        width: 8px; height: 8px;
-        border-radius: 50%;
-        background: var(--watch-accent);
-        animation: pulse 1.5s ease infinite;
-    }
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.3; }
-    }
-    .schedule-cancel-btn {
-        margin-left: auto;
-        background: rgba(255,100,100,0.15);
-        border: 1px solid rgba(255,100,100,0.3);
-        color: #ff6b6b;
-        padding: 4px 14px;
-        border-radius: 12px;
-        font-size: 11px;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-    .schedule-cancel-btn:hover {
-        background: rgba(255,100,100,0.25);
-    }
+    .schedule-module{margin-top:20px;border-top:1px solid rgba(255,255,255,0.06);padding-top:18px}
+    .schedule-header{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:6px}
+    .schedule-type-badge{font-size:11px;padding:3px 10px;border-radius:10px;background:rgba(0,212,255,0.15);color:var(--watch-accent);margin-left:auto}
+    .schedule-type-badge.scheduled{background:rgba(168,85,247,0.2);color:var(--watch-purple)}
+    .schedule-trigger{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-radius:12px;cursor:pointer;color:rgba(255,255,255,0.3);font-size:12px;transition:all .3s}
+    .schedule-trigger:hover{color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.02)}
+    .schedule-body{padding:16px 0 8px}
+    .schedule-toggle-row{margin-bottom:16px;display:flex;justify-content:center}
+    .toggle-switch-wrapper{display:flex;align-items:center;gap:14px}
+    .toggle-label{font-size:13px;color:rgba(255,255,255,0.5);transition:color .3s}
+    .toggle-label.active{color:var(--watch-accent);font-weight:600}
+    .switch{position:relative;display:inline-block;width:46px;height:26px}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.1);transition:.3s;border-radius:26px}
+    .slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background:var(--watch-accent);transition:.3s;border-radius:50%}
+    .switch input:checked+.slider{background:rgba(168,85,247,0.2)}
+    .switch input:checked+.slider:before{transform:translateX(20px);background:var(--watch-purple)}
+    .schedule-input-row{margin-bottom:14px}
+    .time-digit-group{display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap}
+    .time-digit{width:52px;padding:10px 6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;text-align:center;font-size:16px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;outline:none;transition:all .3s;-moz-appearance:textfield}
+    .time-digit::-webkit-inner-spin-button,.time-digit::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+    .time-digit:focus{border-color:var(--watch-accent);box-shadow:0 0 12px rgba(0,212,255,0.15);background:rgba(0,212,255,0.06)}
+    .time-digit::placeholder{color:rgba(255,255,255,0.15);font-weight:400;font-size:13px}
+    .time-sep{color:rgba(255,255,255,0.25);font-size:18px;font-weight:300;padding:0 1px}
+    .schedule-start-btn{display:block;width:100%;padding:12px;border-radius:30px;background:linear-gradient(135deg,var(--watch-accent),var(--watch-purple));border:none;color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;letter-spacing:1px}
+    .schedule-start-btn:hover{transform:scale(1.02);box-shadow:0 0 24px var(--watch-glow)}
+    .schedule-start-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+    .schedule-status{margin-top:12px;padding:10px 14px;border-radius:10px;font-size:12px;text-align:center;background:rgba(168,85,247,0.1);color:var(--watch-purple);border:1px solid rgba(168,85,247,0.2)}
+    .schedule-status.done{background:rgba(34,211,238,0.1);color:var(--watch-green);border-color:rgba(34,211,238,0.2)}
+    .schedule-status .countdown-timer{font-size:22px;font-weight:700;font-family:'SF Mono','Cascadia Code','Consolas',monospace;display:block;margin:6px 0;color:#fff}
 </style>
 
 <div class="watch-wrapper">
@@ -609,73 +380,54 @@
                 <span style="opacity:0.5;">(每页约10条)</span>
             </div>
 
-            <div class="schedule-section">
+            <div class="schedule-module" id="scheduleModule">
                 <div class="schedule-header">
-                    <h3><i class="fas fa-clock me-2"></i>定时采集</h3>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="scheduleToggle" onchange="toggleSchedule()">
-                        <span class="toggle-slider"></span>
-                    </label>
+                    <i class="fas fa-clock me-2"></i>定时采集
+                    <span class="schedule-type-badge" id="scheduleTypeBadge">立刻采集</span>
                 </div>
-                <div class="schedule-body" id="scheduleBody">
-                    <div class="mode-switch-row">
-                        <span class="mode-label">定时方式</span>
-                        <button class="mode-toggle-btn" id="modeToggleBtn" type="button" onclick="toggleMode()">
-                            <span class="toggle-track"></span>
-                            <span class="toggle-text">
-                                <span id="modeTextBeijing" class="active-text">北京时间</span>
-                                <span id="modeTextCountdown" class="inactive-text">倒计时</span>
-                            </span>
-                        </button>
-                    </div>
-
-                    <div id="beijingTimePanel">
-                        <div class="datetime-picker-row">
-                            <label>目标时间</label>
-                            <div class="datetime-input-group">
-                                <input type="number" id="schYear" min="2020" max="2099" value="2026" style="width:66px;">
-                                <span class="datetime-separator">年</span>
-                                <select id="schMonth">
-                                    <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-                                    <option value="4">4</option><option value="5">5</option><option value="6">6</option>
-                                    <option value="7">7</option><option value="8">8</option><option value="9">9</option>
-                                    <option value="10">10</option><option value="11">11</option><option value="12">12</option>
-                                </select>
-                                <span class="datetime-separator">月</span>
-                                <select id="schDay"></select>
-                                <span class="datetime-separator">日</span>
-                                <select id="schHour"></select>
-                                <span class="datetime-separator">:</span>
-                                <select id="schMinute"></select>
-                            </div>
+                <div class="schedule-body" id="scheduleBody" style="display:none">
+                    <div class="schedule-toggle-row">
+                        <div class="toggle-switch-wrapper">
+                            <span class="toggle-label" id="toggleLabelBeijing">北京时间定时</span>
+                            <label class="switch">
+                                <input type="checkbox" id="scheduleToggle" onchange="switchScheduleMode()">
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="toggle-label" id="toggleLabelCountdown">倒计时</span>
                         </div>
                     </div>
-
-                    <div id="countdownPanel" style="display:none;">
-                        <div class="countdown-row">
-                            <label>倒计时</label>
-                            <div class="countdown-input-group">
-                                <input type="number" id="cdDay" value="0" min="0" max="30">
-                                <span class="cd-unit">天</span>
-                                <input type="number" id="cdHour" value="0" min="0" max="23">
-                                <span class="cd-unit">时</span>
-                                <input type="number" id="cdMinute" value="0" min="0" max="59">
-                                <span class="cd-unit">分</span>
-                                <input type="number" id="cdSecond" value="0" min="0" max="59">
-                                <span class="cd-unit">秒</span>
-                            </div>
+                    <div class="schedule-input-row" id="beijingInputs">
+                        <div class="time-digit-group">
+                            <input type="number" class="time-digit" id="bjYear" min="2024" max="2124" placeholder="年">
+                            <span class="time-sep">-</span>
+                            <input type="number" class="time-digit" id="bjMonth" min="1" max="12" placeholder="月">
+                            <span class="time-sep">-</span>
+                            <input type="number" class="time-digit" id="bjDay" min="1" max="31" placeholder="日">
+                            <span class="time-sep">&nbsp;</span>
+                            <input type="number" class="time-digit" id="bjHour" min="0" max="23" placeholder="时">
+                            <span class="time-sep">:</span>
+                            <input type="number" class="time-digit" id="bjMin" min="0" max="59" placeholder="分">
+                            <span class="time-sep">:</span>
+                            <input type="number" class="time-digit" id="bjSec" min="0" max="59" placeholder="秒">
                         </div>
                     </div>
-
-                    <button class="search-btn" onclick="startScheduledCollect()" style="margin-top:16px;height:42px;padding:0 24px;font-size:14px;">
-                        <i class="fas fa-stopwatch me-1"></i>启动定时采集
+                    <div class="schedule-input-row" id="countdownInputs" style="display:none">
+                        <div class="time-digit-group">
+                            <input type="number" class="time-digit" id="cdHour" min="0" max="8760" value="0" placeholder="时">
+                            <span class="time-sep">:</span>
+                            <input type="number" class="time-digit" id="cdMin" min="0" max="59" value="0" placeholder="分">
+                            <span class="time-sep">:</span>
+                            <input type="number" class="time-digit" id="cdSec" min="0" max="59" value="0" placeholder="秒">
+                        </div>
+                    </div>
+                    <button class="schedule-start-btn" id="scheduleStartBtn" onclick="startSchedule()">
+                        <i class="fas fa-hourglass-start me-2"></i>开始定时
                     </button>
-
-                    <div class="schedule-status" id="scheduleStatus">
-                        <span class="status-dot"></span>
-                        <span id="scheduleStatusText"></span>
-                        <button class="schedule-cancel-btn" onclick="cancelSchedule()">取消定时</button>
-                    </div>
+                    <div class="schedule-status" id="scheduleStatus" style="display:none"></div>
+                </div>
+                <div class="schedule-trigger" id="scheduleTrigger" onclick="toggleSchedule()">
+                    <span id="scheduleTriggerText">设置定时采集</span>
+                    <i class="fas fa-chevron-down" id="scheduleChevron"></i>
                 </div>
             </div>
         </div>
@@ -770,186 +522,220 @@
 {% block scripts %}
 <script>
 var _xsrf='';
-var scheduleTimer=null;
-var scheduleMode='beijing';
+var _scheduleMode='beijing';
+var _scheduleTimer=null;
+var _scheduleActive=false;
+
 document.addEventListener('DOMContentLoaded',()=>{
     var m=document.cookie.match('_xsrf=([^;]*)');
     if(m)_xsrf=m[1];
     new bootstrap.Modal(document.getElementById('sourceModal'));
     new bootstrap.Modal(document.getElementById('sourceFormModal'));
-    initDatePickers();
+    initBeijingTime();
 });
-
-function initDatePickers(){
-    var now=new Date();
-    document.getElementById('schYear').value=now.getFullYear();
-    document.getElementById('schMonth').value=now.getMonth()+1;
-    updateDays();
-    document.getElementById('schDay').value=now.getDate();
-    var h=document.getElementById('schHour');
-    var m=document.getElementById('schMinute');
-    h.innerHTML=''; m.innerHTML='';
-    for(var i=0;i<24;i++){h.innerHTML+='<option value="'+i+'">'+String(i).padStart(2,'0')+'</option>';}
-    for(var i=0;i<60;i++){m.innerHTML+='<option value="'+i+'">'+String(i).padStart(2,'0')+'</option>';}
-    h.value=now.getHours();
-    m.value=now.getMinutes();
-}
-
-function updateDays(){
-    var y=parseInt(document.getElementById('schYear').value)||2026;
-    var mo=parseInt(document.getElementById('schMonth').value)||1;
-    var daysInMonth=new Date(y,mo,0).getDate();
-    var s=document.getElementById('schDay');
-    var cur=s.value;
-    s.innerHTML='';
-    for(var i=1;i<=daysInMonth;i++){s.innerHTML+='<option value="'+i+'">'+i+'</option>';}
-    var cv=parseInt(cur);
-    if(cv&&cv<=daysInMonth)s.value=cv;
-}
-
-document.getElementById('schYear').addEventListener('change',updateDays);
-document.getElementById('schMonth').addEventListener('change',updateDays);
-
-function toggleSchedule(){
-    var body=document.getElementById('scheduleBody');
-    var checked=document.getElementById('scheduleToggle').checked;
-    if(checked){
-        body.classList.add('active');
-        initDatePickers();
-    }else{
-        body.classList.remove('active');
-        cancelSchedule();
-    }
-}
-
-function toggleMode(){
-    var btn=document.getElementById('modeToggleBtn');
-    var beijing=document.getElementById('beijingTimePanel');
-    var cd=document.getElementById('countdownPanel');
-    var tb=document.getElementById('modeTextBeijing');
-    var tc=document.getElementById('modeTextCountdown');
-    if(scheduleMode==='beijing'){
-        scheduleMode='countdown';
-        btn.classList.add('countdown');
-        beijing.style.display='none';
-        cd.style.display='block';
-        tb.className='inactive-text';
-        tc.className='active-text';
-    }else{
-        scheduleMode='beijing';
-        btn.classList.remove('countdown');
-        beijing.style.display='block';
-        cd.style.display='none';
-        tb.className='active-text';
-        tc.className='inactive-text';
-    }
-}
 
 function playDing(){
     try{
         var ctx=new(window.AudioContext||window.webkitAudioContext)();
-        var osc=ctx.createOscillator();
-        var gain=ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type='sine';
-        osc.frequency.setValueAtTime(800,ctx.currentTime);
-        osc.frequency.setValueAtTime(1200,ctx.currentTime+0.08);
-        gain.gain.setValueAtTime(0.3,ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.6);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime+0.6);
+        var now=ctx.currentTime;
+        var g=ctx.createGain();
+        g.connect(ctx.destination);
+        g.gain.setValueAtTime(0,now);
+        g.gain.linearRampToValueAtTime(0.25,now+0.02);
+        g.gain.setValueAtTime(0.25,now+0.06);
+        g.gain.linearRampToValueAtTime(0,now+0.3);
+        var o1=ctx.createOscillator();
+        o1.type='sine';
+        o1.frequency.setValueAtTime(800,now);
+        o1.frequency.setValueAtTime(1050,now+0.08);
+        o1.connect(g);
+        o1.start(now);
+        o1.stop(now+0.28);
+        var o2=ctx.createOscillator();
+        o2.type='sine';
+        o2.frequency.setValueAtTime(1050,now+0.08);
+        o2.frequency.setValueAtTime(1400,now+0.16);
+        o2.connect(g);
+        o2.start(now+0.08);
+        o2.stop(now+0.28);
+        setTimeout(function(){ctx.close();},400);
     }catch(e){}
 }
 
-function startScheduledCollect(){
+function initBeijingTime(){
+    var now=new Date();
+    document.getElementById('bjYear').value=now.getFullYear();
+    document.getElementById('bjMonth').value=String(now.getMonth()+1).padStart(2,'0');
+    document.getElementById('bjDay').value=String(now.getDate()).padStart(2,'0');
+    document.getElementById('bjHour').value=String(now.getHours()).padStart(2,'0');
+    document.getElementById('bjMin').value=String(now.getMinutes()).padStart(2,'0');
+    document.getElementById('bjSec').value=String(now.getSeconds()).padStart(2,'0');
+}
+
+function toggleSchedule(){
+    var body=document.getElementById('scheduleBody');
+    var chevron=document.getElementById('scheduleChevron');
+    var text=document.getElementById('scheduleTriggerText');
+    if(body.style.display==='none'){
+        body.style.display='block';
+        chevron.className='fas fa-chevron-up';
+        text.textContent='收起定时设置';
+        initBeijingTime();
+    }else{
+        body.style.display='none';
+        chevron.className='fas fa-chevron-down';
+        text.textContent='设置定时采集';
+    }
+}
+
+function switchScheduleMode(){
+    var checked=document.getElementById('scheduleToggle').checked;
+    var beijingEl=document.getElementById('beijingInputs');
+    var cdEl=document.getElementById('countdownInputs');
+    var lb=document.getElementById('toggleLabelBeijing');
+    var lc=document.getElementById('toggleLabelCountdown');
+
+    if(checked){
+        _scheduleMode='countdown';
+        beijingEl.style.display='none';
+        cdEl.style.display='block';
+        lb.classList.remove('active');
+        lc.classList.add('active');
+    }else{
+        _scheduleMode='beijing';
+        beijingEl.style.display='block';
+        cdEl.style.display='none';
+        lb.classList.add('active');
+        lc.classList.remove('active');
+    }
+}
+
+function startSchedule(){
+    if(_scheduleActive)return;
     var kw=document.getElementById('watchKeyword').value.trim();
     if(!kw){alert('请输入关键词');return;}
     var checks=document.querySelectorAll('#sourceToggles input[type=checkbox]:checked');
     if(checks.length===0){alert('请选择采集源');return;}
+    var ids=Array.from(checks).map(c=>c.value).join(',');
+    var pc=document.getElementById('pageCount').value||1;
 
-    cancelSchedule();
+    var scheduleType='now';
+    var targetTime='';
+    var countdownSeconds=0;
 
-    if(scheduleMode==='beijing'){
-        var y=parseInt(document.getElementById('schYear').value);
-        var mo=parseInt(document.getElementById('schMonth').value)-1;
-        var d=parseInt(document.getElementById('schDay').value);
-        var h=parseInt(document.getElementById('schHour').value);
-        var mi=parseInt(document.getElementById('schMinute').value);
-        var targetTime=new Date(y,mo,d,h,mi,0,0);
-        var now=new Date();
-        var diff=targetTime.getTime()-now.getTime();
-        if(diff<=0){
-            alert('目标时间已过，请重新选择');
-            return;
+    if(document.getElementById('scheduleBody').style.display!=='none'){
+        if(_scheduleMode==='beijing'){
+            var y=parseInt(document.getElementById('bjYear').value)||0;
+            var mo=parseInt(document.getElementById('bjMonth').value)||0;
+            var d=parseInt(document.getElementById('bjDay').value)||0;
+            var h=parseInt(document.getElementById('bjHour').value)||0;
+            var mi=parseInt(document.getElementById('bjMin').value)||0;
+            var s=parseInt(document.getElementById('bjSec').value)||0;
+            if(!y||!mo||!d){alert('请填写完整的北京时间');return;}
+            targetTime=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')+
+                ' '+String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0')+':'+String(s).padStart(2,'0');
+            scheduleType='beijing';
+        }else{
+            var ch=parseInt(document.getElementById('cdHour').value)||0;
+            var cm=parseInt(document.getElementById('cdMin').value)||0;
+            var cs=parseInt(document.getElementById('cdSec').value)||0;
+            countdownSeconds=ch*3600+cm*60+cs;
+            if(countdownSeconds<=0){alert('请设置倒计时时间');return;}
+            scheduleType='countdown';
         }
-        var statusEl=document.getElementById('scheduleStatus');
-        var statusText=document.getElementById('scheduleStatusText');
-        statusText.textContent='定时采集已设定，将于 '+y+'年'+(mo+1)+'月'+d+'日 '+String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0')+' 执行采集';
-        statusEl.classList.add('active');
-        scheduleTimer=setTimeout(function(){
-            playDing();
-            doCollect(kw,checks);
-            document.getElementById('scheduleStatus').classList.remove('active');
-        },diff);
-    }else{
-        var cdDay=parseInt(document.getElementById('cdDay').value)||0;
-        var cdHour=parseInt(document.getElementById('cdHour').value)||0;
-        var cdMinute=parseInt(document.getElementById('cdMinute').value)||0;
-        var cdSecond=parseInt(document.getElementById('cdSecond').value)||0;
-        var totalMs=((((cdDay*24+cdHour)*60)+cdMinute)*60+cdSecond)*1000;
-        if(totalMs<=0){
-            alert('请设置有效的倒计时时间');
-            return;
-        }
-        var statusEl=document.getElementById('scheduleStatus');
-        var statusText=document.getElementById('scheduleStatusText');
-        statusText.textContent='倒计时采集已启动，剩余 '+cdDay+'天 '+cdHour+'时 '+cdMinute+'分 '+cdSecond+'秒';
-        statusEl.classList.add('active');
-
-        decreaseCountdown(totalMs,statusText,function(){
-            playDing();
-            doCollect(kw,checks);
-            document.getElementById('scheduleStatus').classList.remove('active');
-        });
     }
+
+    var f=new FormData();
+    f.append('keyword',kw);
+    f.append('source_ids',ids);
+    f.append('page_count',pc);
+    f.append('schedule_type',scheduleType);
+    f.append('_xsrf',_xsrf);
+    if(scheduleType==='beijing')f.append('target_time',targetTime);
+    if(scheduleType==='countdown')f.append('countdown_seconds',String(countdownSeconds));
+
+    var btn=document.getElementById('scheduleStartBtn');
+    btn.disabled=true;
+    btn.innerHTML='<i class="fas fa-spinner fa-pulse me-2"></i>设置中...';
+
+    fetch('/admin/watch/schedule',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
+        if(d.success){
+            if(scheduleType==='now'){
+                playDing();
+                var list=document.getElementById('resultList');
+                list.innerHTML='<div class="collect-status" style="color:var(--watch-green);"><i class="fas fa-check-circle fa-3x mb-3 d-block"></i>'+d.message+'</div>';
+                setTimeout(function(){location.href='/admin/watch/data';},2500);
+            }else{
+                var statusEl=document.getElementById('scheduleStatus');
+                statusEl.style.display='block';
+                var badge=document.getElementById('scheduleTypeBadge');
+                badge.textContent='等待中';
+                badge.classList.add('scheduled');
+                _scheduleActive=true;
+                startLocalCountdown(d.delay_seconds);
+                statusEl.innerHTML='<span>'+d.message+'</span><span class="countdown-timer" id="countdownDisplay"></span>';
+            }
+        }else{
+            alert(d.message);
+        }
+        btn.disabled=false;
+        btn.innerHTML='<i class="fas fa-hourglass-start me-2"></i>开始定时';
+    }).catch(function(e){
+        alert('网络错误: '+e.message);
+        btn.disabled=false;
+        btn.innerHTML='<i class="fas fa-hourglass-start me-2"></i>开始定时';
+    });
 }
 
-function decreaseCountdown(remaining,statusText,callback){
-    var sec=Math.floor(remaining/1000);
-    var d=Math.floor(sec/86400);
-    var h=Math.floor((sec%86400)/3600);
-    var m=Math.floor((sec%3600)/60);
-    var s=sec%60;
-    statusText.textContent='倒计时采集已启动，剩余 '+d+'天 '+h+'时 '+m+'分 '+s+'秒';
+function startLocalCountdown(totalSec){
+    var remaining=totalSec;
+    var display=document.getElementById('countdownDisplay');
+    updateCountdownDisplay(remaining);
 
-    if(remaining<=0){
-        callback();
-        return;
-    }
-
-    scheduleTimer=setTimeout(function(){
-        decreaseCountdown(Math.max(0,remaining-1000),statusText,callback);
+    _scheduleTimer=setInterval(function(){
+        remaining--;
+        if(remaining<=0){
+            clearInterval(_scheduleTimer);
+            _scheduleTimer=null;
+            playDing();
+            var statusEl=document.getElementById('scheduleStatus');
+            statusEl.classList.add('done');
+            statusEl.innerHTML='<i class="fas fa-check-circle me-1"></i>采集时间到！正在进行自动采集...';
+            var badge=document.getElementById('scheduleTypeBadge');
+            badge.textContent='采集中';
+            badge.classList.remove('scheduled');
+            _scheduleActive=false;
+            setTimeout(function(){location.href='/admin/watch/data';},3000);
+        }else{
+            updateCountdownDisplay(remaining);
+        }
     },1000);
 }
 
-function cancelSchedule(){
-    if(scheduleTimer){
-        clearTimeout(scheduleTimer);
-        scheduleTimer=null;
-    }
-    var statusEl=document.getElementById('scheduleStatus');
-    statusEl.classList.remove('active');
+function updateCountdownDisplay(sec){
+    var display=document.getElementById('countdownDisplay');
+    if(!display)return;
+    var h=Math.floor(sec/3600);
+    var m=Math.floor((sec%3600)/60);
+    var s=sec%60;
+    display.textContent=
+        String(h).padStart(2,'0')+':'+
+        String(m).padStart(2,'0')+':'+
+        String(s).padStart(2,'0');
 }
 
-function doCollect(kw,checks){
-    var ids=Array.from(checks).map(function(c){return c.value;}).join(',');
+function startCollect(){
+    var kw=document.getElementById('watchKeyword').value.trim();
+    if(!kw){alert('请输入关键词');return;}
+    var checks=document.querySelectorAll('#sourceToggles input[type=checkbox]:checked');
+    if(checks.length===0){alert('请选择采集源');return;}
+    var ids=Array.from(checks).map(c=>c.value).join(',');
     var pc=document.getElementById('pageCount').value||1;
     var list=document.getElementById('resultList');
     list.innerHTML='<div class="collect-status spinning"><i class="fas fa-circle-notch fa-2x me-3"></i>正在采集，请稍候...</div>';
     var f=new FormData();
     f.append('keyword',kw);f.append('source_ids',ids);f.append('page_count',pc);f.append('_xsrf',_xsrf);
-    fetch('/admin/watch/execute',{method:'POST',body:f}).then(function(r){return r.json();}).then(function(d){
+    fetch('/admin/watch/execute',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
         if(d.success){
             var debugHtml='';
             if(d.debug){
@@ -958,7 +744,7 @@ function doCollect(kw,checks){
                 debugHtml+='</div>';
             }
             list.innerHTML='<div class="collect-status" style="color:var(--watch-green);"><i class="fas fa-check-circle fa-3x mb-3 d-block"></i>'+d.message+'</div>'+debugHtml;
-            setTimeout(function(){location.href='/admin/watch/data';},2500);
+            setTimeout(()=>location.href='/admin/watch/data',2500);
         }else{
             var errHtml='';
             if(d.debug){
@@ -968,34 +754,25 @@ function doCollect(kw,checks){
             }
             list.innerHTML='<div class="collect-status" style="color:#ff6b6b;"><i class="fas fa-exclamation-circle fa-3x mb-3 d-block"></i>'+d.message+'</div>'+errHtml;
         }
-    }).catch(function(e){
+    }).catch(e=>{
         list.innerHTML='<div class="collect-status" style="color:#ff6b6b;">网络错误: '+e.message+'</div>';
     });
 }
 
-function startCollect(){
-    var kw=document.getElementById('watchKeyword').value.trim();
-    if(!kw){alert('请输入关键词');return;}
-    var checks=document.querySelectorAll('#sourceToggles input[type=checkbox]:checked');
-    if(checks.length===0){alert('请选择采集源');return;}
-    playDing();
-    doCollect(kw,checks);
-}
-
 function manageSources(){
-    fetch('/admin/watch/sources').then(function(r){return r.json();}).then(function(d){
+    fetch('/admin/watch/sources').then(r=>r.json()).then(d=>{
         var tb=document.getElementById('sourceTableBody');
         tb.innerHTML='';
-        d.data.forEach(function(s){
-            tb.innerHTML+='<tr>'+
-                '<td>'+s.name+'</td><td>'+s.code+'</td>'+
-                '<td><small>'+((s.url_template||'').substring(0,60))+'</small></td>'+
-                '<td>'+(s.page_param||'pn')+'</td>'+
-                '<td>'+(s.status?'<span class="badge bg-success">启用</span>':'<span class="badge bg-secondary">禁用</span>')+'</td>'+
-                '<td>'+
-                    '<button class="btn btn-sm btn-outline-info" onclick="editSource('+s.id+')"><i class="fas fa-edit"></i></button>'+
-                    '<button class="btn btn-sm btn-outline-danger" onclick="deleteSource('+s.id+',\''+s.name+'\')"><i class="fas fa-trash"></i></button>'+
-                '</td></tr>';
+        d.data.forEach(s=>{
+            tb.innerHTML+=`<tr>
+                <td>${s.name}</td><td>${s.code}</td>
+                <td><small>${(s.url_template||'').substring(0,60)}</small></td>
+                <td>${s.page_param||'pn'}</td>
+                <td>${s.status?'<span class="badge bg-success">启用</span>':'<span class="badge bg-secondary">禁用</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-info" onclick="editSource(${s.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteSource(${s.id},'${s.name}')"><i class="fas fa-trash"></i></button>
+                </td></tr>`;
         });
         new bootstrap.Modal(document.getElementById('sourceModal')).show();
     });
@@ -1009,8 +786,8 @@ function openSourceForm(){
 }
 
 function editSource(id){
-    fetch('/admin/watch/sources').then(function(r){return r.json();}).then(function(d){
-        var s=d.data.find(function(x){return x.id==id;});
+    fetch('/admin/watch/sources').then(r=>r.json()).then(d=>{
+        var s=d.data.find(x=>x.id==id);
         if(!s)return;
         document.getElementById('sourceFormTitle').textContent='编辑数据源';
         document.getElementById('sfId').value=s.id;
@@ -1030,7 +807,7 @@ function saveSource(){
     var f=new FormData(document.getElementById('sourceForm'));
     f.append('action',id?'update':'create');
     f.append('_xsrf',_xsrf);
-    fetch('/admin/watch/sources',{method:'POST',body:f}).then(function(r){return r.json();}).then(function(d){
+    fetch('/admin/watch/sources',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
         alert(d.message);
         if(d.success){
             bootstrap.Modal.getInstance(document.getElementById('sourceFormModal')).hide();
@@ -1043,7 +820,7 @@ function deleteSource(id,name){
     if(!confirm('确认删除 '+name+' ?'))return;
     var f=new FormData();
     f.append('action','delete');f.append('id',id);f.append('_xsrf',_xsrf);
-    fetch('/admin/watch/sources',{method:'POST',body:f}).then(function(r){return r.json();}).then(function(d){
+    fetch('/admin/watch/sources',{method:'POST',body:f}).then(r=>r.json()).then(d=>{
         alert(d.message);if(d.success)manageSources();
     });
 }

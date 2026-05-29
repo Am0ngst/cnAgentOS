@@ -63,6 +63,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;h
 .context-menu .menu-item{padding:10px 16px;cursor:pointer;font-size:13px;color:#333;transition:all .1s}
 .context-menu .menu-item:hover{background:#f0f0f0}
 .context-menu .menu-item.disabled{color:#ccc;cursor:not-allowed;pointer-events:none}
+#btnVoiceToggle{color:#666;transition:color .2s}
+#btnVoiceToggle.voice-mode{color:#07c160}
+#btnTTSSend{color:#999;transition:color .2s}
+#btnTTSSend:hover{color:#00b8e0}
+#btnTTSSend:disabled{color:#ddd;cursor:not-allowed}
+.msg-bubble.speech-highlight{outline:2px solid #00d4ff!important;outline-offset:2px!important;transition:outline .3s}
+.im-voice-area{display:flex;align-items:center;gap:10px;padding:4px 0;min-height:48px}
+.voice-cancel-btn{width:40px;height:40px;border-radius:50%;border:1px solid #e0e0e0;background:#fff;color:#999;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.voice-cancel-btn:hover{background:#fef0f0;color:#ef4444;border-color:#fecaca}
+.voice-record-btn{flex:1;height:44px;border-radius:8px;border:1px solid #e0e0e0;background:#f8f8f8;color:#333;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;user-select:none;-webkit-user-select:none;transition:all .15s}
+.voice-record-btn:active{background:#07c160;color:#fff;border-color:#06ad56}
+.voice-record-btn.recording{background:#ef4444;color:#fff;border-color:#dc2626;animation:voice-pulse 1s infinite}
+.voice-wave{display:flex;align-items:flex-end;gap:3px;height:20px}
+.voice-wave i{width:3px;border-radius:2px;background:currentColor;animation:wave-bounce .6s ease-in-out infinite}
+.voice-wave i:nth-child(1){animation-delay:0s;height:8px}
+.voice-wave i:nth-child(2){animation-delay:.1s;height:14px}
+.voice-wave i:nth-child(3){animation-delay:.2s;height:20px}
+.voice-wave i:nth-child(4){animation-delay:.3s;height:14px}
+.voice-wave i:nth-child(5){animation-delay:.4s;height:8px}
+.voice-timer{font-size:12px;color:#999;min-width:40px;text-align:center;flex-shrink:0}
+@keyframes voice-pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+@keyframes wave-bounce{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.4)}}
+.msg-row.me .chat-voice-msg .voice-dur{color:#05944c}
+.msg-row.me .chat-voice-msg .voice-speaker .spk-cone{border-right-color:#05944c}
+.msg-row.me .chat-voice-msg .voice-speaker .spk-base{background:#05944c}
+.msg-row.me .chat-voice-msg .voice-speaker .spk-arc{border-color:#05944c}
+.chat-voice-msg{display:inline-flex;align-items:center;gap:6px;cursor:pointer;min-width:56px;padding:2px 0;position:relative}
+.chat-voice-msg .voice-dur{font-size:13px;color:#555;font-weight:500;font-variant-numeric:tabular-nums;min-width:32px;white-space:nowrap}
+.chat-voice-msg .voice-speaker{position:relative;width:22px;height:16px;flex-shrink:0}
+.chat-voice-msg .voice-speaker .spk-cone{position:absolute;left:0;top:3px;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:7px solid #555}
+.chat-voice-msg .voice-speaker .spk-base{position:absolute;left:7px;top:2px;width:2.5px;height:12px;background:#555;border-radius:1px}
+.chat-voice-msg .voice-speaker .spk-arc{position:absolute;left:11px;top:3px;width:6px;height:10px;border:1.5px solid #555;border-left:none;border-radius:0 50% 50% 0}
+.chat-voice-msg .voice-speaker .spk-arc:nth-child(3){left:11px}
+.chat-voice-msg .voice-speaker .spk-arc:nth-child(4){left:14px;width:4px;height:7px;top:4.5px}
+.chat-voice-msg.unread .voice-speaker::after{content:'';position:absolute;top:-2px;right:-4px;width:7px;height:7px;border-radius:50%;background:#f44;z-index:5}
+.chat-voice-msg.playing .voice-speaker .spk-arc{animation:spk-wave .4s ease-in-out infinite alternate}
+.chat-voice-msg.playing .voice-speaker .spk-arc:nth-child(3){animation-delay:0s}
+.chat-voice-msg.playing .voice-speaker .spk-arc:nth-child(4){animation-delay:.12s}
+@keyframes spk-wave{0%{opacity:.2}60%{opacity:1}100%{opacity:1}}
+.msg-row.other .chat-voice-msg, .msg-row.emp .chat-voice-msg{flex-direction:row-reverse;gap:6px}
+.msg-row.other .chat-voice-msg.unread .voice-speaker::after, .msg-row.emp .chat-voice-msg.unread .voice-speaker::after{right:auto;left:-4px}
 
 .group-create-search{padding:12px 16px;position:sticky;top:0;background:#fff;z-index:2}
 .group-create-list{max-height:420px;overflow-y:auto}
@@ -207,12 +248,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;h
         <div class="im-input-toolbar">
             <button onclick="toggleEmoji()" title="表情"><i class="far fa-smile"></i></button>
             <button onclick="document.getElementById('fileInput').click()" title="发送文件"><i class="fas fa-paperclip"></i></button>
+            <button id="btnVoiceToggle" onclick="toggleVoiceMode()" title="切换到语音输入"><i class="fas fa-microphone"></i></button>
+            <button id="btnTTSSend" onclick="sendTTSVoice()" title="AI语音朗读并发送"><i class="fas fa-volume-up"></i></button>
             <input type="file" id="fileInput" onchange="uploadFile(this)">
         </div>
         <div class="emoji-picker" id="emojiPicker"></div>
         <div class="im-input-area">
             <textarea id="chatInput" rows="1" placeholder="输入消息..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" style="height:40px"></textarea>
-            <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            <button class="send-btn" id="btnSend" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+        <div class="im-voice-area" id="voiceRecordArea" style="display:none">
+            <button class="voice-cancel-btn" id="btnVoiceCancel" onclick="cancelRecording()" title="取消"><i class="fas fa-times"></i></button>
+            <button class="voice-record-btn" id="btnVoiceRecord" onmousedown="startRecording()" onmouseup="stopRecording()" onmouseleave="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()">
+                <span id="voiceRecordLabel">按住 说话</span>
+                <span class="voice-wave" id="voiceWave" style="display:none">
+                    <i></i><i></i><i></i><i></i><i></i>
+                </span>
+            </button>
+            <div class="voice-timer" id="voiceTimer" style="display:none">00:00</div>
         </div>
     </div>
 </div>
@@ -285,6 +338,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;h
 
 <div class="context-menu" id="contextMenu" onclick="event.stopPropagation()">
     <div class="menu-item" id="menuRecall" onclick="recallMessage()">撤回</div>
+    <div class="menu-item" id="menuSpeak" onclick="speakContextMsg()">语音朗读</div>
 </div>
 
 <script src="{{ static_url('bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js') }}"></script>
@@ -716,6 +770,362 @@ function showWxConfirm(title,body,onConfirm){
     };
 }
 
+var _lastReqCount = -1;
+
+function playDing(){
+    try{
+        var ctx = new (window.AudioContext||window.webkitAudioContext)();
+        var now = ctx.currentTime;
+        var g = ctx.createGain();
+        g.connect(ctx.destination);
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(0.25, now + 0.02);
+        g.gain.setValueAtTime(0.25, now + 0.06);
+        g.gain.linearRampToValueAtTime(0, now + 0.3);
+
+        var o1 = ctx.createOscillator();
+        o1.type = 'sine';
+        o1.frequency.setValueAtTime(800, now);
+        o1.frequency.setValueAtTime(1050, now + 0.08);
+        o1.connect(g);
+        o1.start(now);
+        o1.stop(now + 0.28);
+
+        var o2 = ctx.createOscillator();
+        o2.type = 'sine';
+        o2.frequency.setValueAtTime(1050, now + 0.08);
+        o2.frequency.setValueAtTime(1400, now + 0.16);
+        o2.connect(g);
+        o2.start(now + 0.08);
+        o2.stop(now + 0.28);
+
+        setTimeout(function(){ ctx.close(); }, 400);
+    }catch(e){}
+}
+
+var _speakingMsgId = null;
+var _voiceMode = false;
+var _mediaRecorder = null;
+var _audioChunks = [];
+var _recordTimer = null;
+var _recordSeconds = 0;
+
+function toggleVoiceMode(){
+    if(!chatPeer && !chatGroup){showToast('请先选择对话');return;}
+    if(!_voiceMode){
+        if(!navigator.permissions || !navigator.permissions.query){
+            checkMicAndSwitch();
+        }else{
+            navigator.permissions.query({name:'microphone'}).then(function(ps){
+                if(ps.state === 'granted'){ switchToVoiceMode(); }
+                else{ showMicPermissionDialog(); }
+            }).catch(function(){ checkMicAndSwitch(); });
+        }
+    }else{
+        switchToTextMode();
+    }
+}
+
+function checkMicAndSwitch(){
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
+        s.getTracks().forEach(function(t){t.stop();});
+        switchToVoiceMode();
+    }).catch(function(err){
+        if(err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'){
+            showToast('麦克风权限被拒绝，无法使用语音功能');
+        }else{
+            showMicPermissionDialog();
+        }
+    });
+}
+
+function showMicPermissionDialog(){
+    var overlay = document.createElement('div');
+    overlay.id = 'mic-perm-dialog';
+    overlay.style.cssText =
+        'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);' +
+        'z-index:100000;display:flex;align-items:center;justify-content:center;';
+    overlay.onclick = function(e){if(e.target===overlay)overlay.remove();};
+    overlay.innerHTML =
+        '<div style="background:#fff;border-radius:16px;padding:32px 28px;width:360px;' +
+        'text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.2);">' +
+            '<div style="font-size:48px;margin-bottom:16px;">🎤</div>' +
+            '<h5 style="margin-bottom:8px;">申请麦克风权限</h5>' +
+            '<p style="color:#666;font-size:13px;margin-bottom:24px;line-height:1.7;">' +
+                '语音输入功能需要使用麦克风录音。<br>音频仅在本地处理，不会上传至服务器。</p>' +
+            '<div style="display:flex;gap:10px;">' +
+                '<button id="mic-deny-btn" style="flex:1;padding:10px;border:1px solid #ddd;' +
+                'border-radius:10px;background:#f5f5f5;color:#666;cursor:pointer;">拒绝</button>' +
+                '<button id="mic-allow-btn" style="flex:1;padding:10px;border:none;' +
+                'border-radius:10px;background:#07c160;color:#fff;font-weight:600;cursor:pointer;">允许</button>' +
+            '</div></div>';
+    document.body.appendChild(overlay);
+    document.getElementById('mic-deny-btn').onclick = function(){overlay.remove();};
+    document.getElementById('mic-allow-btn').onclick = function(){
+        overlay.remove();
+        navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
+            s.getTracks().forEach(function(t){t.stop();});
+            switchToVoiceMode();
+        }).catch(function(){showToast('麦克风权限被拒绝');});
+    };
+}
+
+function switchToVoiceMode(){
+    if(_voiceMode)return;
+    _voiceMode = true;
+    var btn = document.getElementById('btnVoiceToggle');
+    btn.classList.add('voice-mode');
+    btn.title = '切换到文字输入';
+    btn.innerHTML = '<i class="fas fa-keyboard"></i>';
+    document.querySelector('.im-input-area').style.display = 'none';
+    document.getElementById('voiceRecordArea').style.display = 'flex';
+    var ep = document.getElementById('emojiPicker');
+    if(ep) ep.classList.remove('show');
+    showToast('已切换到语音输入');
+}
+
+function switchToTextMode(){
+    _voiceMode = false;
+    var btn = document.getElementById('btnVoiceToggle');
+    btn.classList.remove('voice-mode');
+    btn.title = '切换到语音输入';
+    btn.innerHTML = '<i class="fas fa-microphone"></i>';
+    document.querySelector('.im-input-area').style.display = '';
+    document.getElementById('voiceRecordArea').style.display = 'none';
+    cancelRecording();
+}
+
+function startRecording(){
+    if(!_voiceMode)return;
+    if(_mediaRecorder && _mediaRecorder.state === 'recording')return;
+    if(!navigator.mediaDevices){
+        showToast('您的浏览器不支持录音');
+        return;
+    }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        _audioChunks = [];
+        _recordSeconds = 0;
+        var mimeType = 'audio/webm';
+        if(!MediaRecorder.isTypeSupported(mimeType)){
+            mimeType = 'audio/mp4';
+            if(!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+        }
+        _mediaRecorder = new MediaRecorder(stream, mimeType ? {mimeType:mimeType} : {});
+        _mediaRecorder.ondataavailable = function(e){
+            if(e.data.size > 0) _audioChunks.push(e.data);
+        };
+        _mediaRecorder.onstop = function(){
+            stream.getTracks().forEach(function(t){t.stop();});
+            if(_audioChunks.length && _recordSeconds >= 1){
+                var blob = new Blob(_audioChunks, {type:_mediaRecorder.mimeType || 'audio/webm'});
+                sendVoiceMessage(blob);
+            }
+            resetVoiceUI();
+        };
+        _mediaRecorder.start(100);
+        updateVoiceRecordingUI(true);
+        startVoiceTimer();
+    }).catch(function(err){
+        showToast('无法访问麦克风: '+(err.message||'权限不足'));
+    });
+}
+
+function stopRecording(){
+    stopVoiceTimer();
+    if(_mediaRecorder && _mediaRecorder.state === 'recording'){
+        _mediaRecorder.stop();
+    }else{
+        resetVoiceUI();
+    }
+}
+
+function cancelRecording(){
+    stopVoiceTimer();
+    if(_mediaRecorder && _mediaRecorder.state === 'recording'){
+        _mediaRecorder.onstop = function(){};
+        _mediaRecorder.stop();
+        try{_mediaRecorder.stream.getTracks().forEach(function(t){t.stop();});}catch(e){}
+    }
+    _audioChunks = [];
+    _mediaRecorder = null;
+    resetVoiceUI();
+}
+
+function resetVoiceUI(){
+    var recordBtn = document.getElementById('btnVoiceRecord');
+    recordBtn.classList.remove('recording');
+    document.getElementById('voiceRecordLabel').style.display = '';
+    document.getElementById('voiceWave').style.display = 'none';
+    document.getElementById('voiceTimer').style.display = 'none';
+    document.getElementById('voiceTimer').textContent = '00:00';
+}
+
+function updateVoiceRecordingUI(active){
+    var recordBtn = document.getElementById('btnVoiceRecord');
+    if(active){
+        recordBtn.classList.add('recording');
+        document.getElementById('voiceRecordLabel').style.display = 'none';
+        document.getElementById('voiceWave').style.display = 'flex';
+        document.getElementById('voiceTimer').style.display = 'block';
+    }
+}
+
+function startVoiceTimer(){
+    _recordSeconds = 0;
+    document.getElementById('voiceTimer').textContent = '00:00';
+    _recordTimer = setInterval(function(){
+        _recordSeconds++;
+        var m = Math.floor(_recordSeconds / 60);
+        var s = _recordSeconds % 60;
+        document.getElementById('voiceTimer').textContent =
+            (m<10?'0'+m:m) + ':' + (s<10?'0'+s:s);
+        if(_recordSeconds >= 60) stopRecording();
+    }, 1000);
+}
+
+function stopVoiceTimer(){
+    if(_recordTimer){clearInterval(_recordTimer);_recordTimer = null;}
+}
+
+function sendVoiceMessage(blob){
+    if(!chatPeer && !chatGroup)return;
+    var ext = (_mediaRecorder && _mediaRecorder.mimeType && _mediaRecorder.mimeType.indexOf('mp4')>=0) ? 'mp4' : 'webm';
+    var fileName = 'voice_' + Date.now() + '.' + ext;
+    var f = new FormData();
+    f.append('file', blob, fileName);
+    f.append('_xsrf', _xsrf);
+    fetch('/user/im/upload',{method:'POST',body:f}).then(function(r){return r.json();}).then(function(d){
+        if(!d.success){showToast(d.message);return;}
+        var info = d.data;
+        if(chatPeer){
+            var pf = new FormData();
+            pf.append('peer_id',chatPeer.id);
+            pf.append('message','[语音] '+formatDuration(_recordSeconds));
+            pf.append('msg_type','voice');
+            pf.append('file_name',info.file_name);
+            pf.append('file_size',info.file_size);
+            pf.append('file_path',info.file_path);
+            pf.append('duration',clampDuration(_recordSeconds));
+            pf.append('_xsrf',_xsrf);
+            if(chatPeer.emp_alias) pf.append('emp_alias',chatPeer.emp_alias);
+            fetch('/user/im/private/chat',{method:'POST',body:pf});
+        }else if(chatGroup){
+            var gf = new FormData();
+            gf.append('group_id',chatGroup.id);
+            gf.append('message','[语音] '+formatDuration(_recordSeconds));
+            gf.append('msg_type','voice');
+            gf.append('file_name',info.file_name);
+            gf.append('file_size',info.file_size);
+            gf.append('file_path',info.file_path);
+            gf.append('duration',clampDuration(_recordSeconds));
+            gf.append('_xsrf',_xsrf);
+            fetch('/user/im/group/send',{method:'POST',body:gf});
+        }
+        showToast('语音已发送');
+    });
+}
+
+function formatDuration(sec){
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return (m<10?'0'+m:m) + ':' + (s<10?'0'+s:s);
+}
+
+function clampDuration(sec){
+    if(!sec || sec < 1) return 1;
+    if(sec > 60) return 60;
+    return Math.round(sec);
+}
+
+function playVoiceMessage(filePath, textContent, el){
+    if(el){
+        var all = document.querySelectorAll('.chat-voice-msg.playing');
+        all.forEach(function(n){n.classList.remove('playing');});
+        el.classList.add('playing');
+        el.classList.remove('unread');
+        var audio = null;
+        if(filePath && filePath !== 'null' && filePath !== 'undefined'){
+            audio = new Audio(filePath);
+        }
+        if(audio){
+            audio.play().then(function(){}).catch(function(){showToast('播放失败');el.classList.remove('playing');});
+            audio.onended = function(){el.classList.remove('playing');};
+            audio.onerror = function(){el.classList.remove('playing');};
+        }else if(textContent){
+            window.speechSynthesis.cancel();
+            speakText(textContent, 'voice-'+Date.now(), function(){el.classList.remove('playing');});
+        }else{
+            el.classList.remove('playing');
+        }
+    }
+}
+
+function sendTTSVoice(){
+    var msg = document.getElementById('chatInput').value.trim();
+    if(!msg){showToast('请先输入文字');return;}
+    if(!chatPeer && !chatGroup){showToast('请先选择对话');return;}
+    var btn = document.getElementById('btnTTSSend');
+    var origHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+    speakText(msg, 'tts-send', function(){
+        btn.innerHTML = origHtml;
+        var esDur = clampDuration(Math.round(msg.length * 0.35));
+        if(chatPeer){
+            var pf = new FormData();
+            pf.append('peer_id', chatPeer.id);
+            pf.append('message', msg);
+            pf.append('msg_type', 'voice');
+            pf.append('duration', esDur);
+            pf.append('_xsrf', _xsrf);
+            if(chatPeer.emp_alias) pf.append('emp_alias', chatPeer.emp_alias);
+            fetch('/user/im/private/chat', {method:'POST', body:pf});
+        }else if(chatGroup){
+            var gf = new FormData();
+            gf.append('group_id', chatGroup.id);
+            gf.append('message', msg);
+            gf.append('msg_type', 'voice');
+            gf.append('duration', esDur);
+            gf.append('_xsrf', _xsrf);
+            fetch('/user/im/group/send', {method:'POST', body:gf});
+        }
+        document.getElementById('chatInput').value = '';
+        showToast('AI语音消息已发送');
+    });
+}
+
+function speakText(text, msgId, onDone){
+    if(!text)return;
+    if(!('speechSynthesis' in window)){
+        showToast('您的浏览器不支持语音朗读');
+        return;
+    }
+    var synth = window.speechSynthesis;
+    if(synth.speaking){
+        synth.cancel();
+        if(_speakingMsgId === msgId && msgId !== undefined){
+            _speakingMsgId = null;
+            return;
+        }
+    }
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN';
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    u.volume = 0.8;
+    u.onstart = function(){
+        _speakingMsgId = msgId;
+    };
+    u.onend = function(){
+        _speakingMsgId = null;
+        if(onDone) onDone();
+    };
+    u.onerror = function(){
+        _speakingMsgId = null;
+        if(onDone) onDone();
+    };
+    synth.speak(u);
+}
+
 function showToast(msg){
     var container = document.getElementById('toastContainer');
     var el = document.createElement('div');
@@ -863,6 +1273,7 @@ function saveGroupName(){
 }
 
 function openPrivateChat(peerId,peerName,idx){
+    if(_voiceMode) switchToTextMode();
     chatPeer = {id:peerId,name:peerName,idx:idx};
     chatGroup = null;
     clearPoll();
@@ -882,6 +1293,7 @@ function openPrivateChat(peerId,peerName,idx){
 }
 
 function openEmpChat(empAlias,empName){
+    if(_voiceMode) switchToTextMode();
     chatPeer = {id:-1,name:empName,emp_alias:empAlias};
     chatGroup = null;
     clearPoll();
@@ -923,10 +1335,13 @@ function pollPrivate(){
     fetch(url).then(r=>r.json()).then(d=>{
         if(!d.success)return;
         if(d.data.length){
+            var hasMsgFromOther = false;
             d.data.forEach(m=>{
                 renderPrivateMsg(m);
                 lastPrivateMsgId = Math.max(lastPrivateMsgId,m.id);
+                if(m.from_user_id !== userId && !m.is_recalled) hasMsgFromOther = true;
             });
+            if(hasMsgFromOther) playDing();
             var msgs = document.getElementById('chatMessages');
             msgs.scrollTop = msgs.scrollHeight;
         }
@@ -957,18 +1372,23 @@ function renderPrivateMsg(m){
     row.setAttribute('data-msg-id', m.id);
     row.setAttribute('data-create-at', m.create_at);
     row.setAttribute('data-from-user', m.from_user_id);
-    if(isMe){
-        row.addEventListener('contextmenu', function(e){
-            e.preventDefault();
-            showContextMenu(e, m.id, m.create_at);
-        });
-    }
+    if(m.msg_type === 'text') row.setAttribute('data-content', m.content||'');
+    row.setAttribute('data-msg-type', m.msg_type||'text');
+    row.addEventListener('contextmenu', function(e){
+        e.preventDefault();
+        showContextMenu(e, m.id, m.create_at);
+    });
     var avatarIcon = '<i class="fas '+(isBot?'fa-robot':'fa-user')+'"></i>';
     var contentHtml = '';
     if(m.msg_type==='image'){
         contentHtml = '<img class="msg-img" src="'+m.file_path+'" onclick="window.open(this.src)">';
     }else if(m.msg_type==='file'){
         contentHtml = '<a class="msg-file" href="'+m.file_path+'" target="_blank"><i class="fas fa-file"></i><span>'+escapeHtml(m.file_name||'文件')+' ('+formatSize(m.file_size)+')</span></a>';
+    }else if(m.msg_type==='voice'){
+        var dur = clampDuration(m.duration || 0);
+        var voiceCls = 'chat-voice-msg';
+        if(!isMe) voiceCls += ' unread';
+        contentHtml = '<div class="'+voiceCls+'" onclick="playVoiceMessage(\''+(m.file_path||'')+'\',\''+(m.content||'').replace(/'/g,"\\'")+'\',this)"><span class="voice-speaker"><span class="spk-cone"></span><span class="spk-base"></span><span class="spk-arc"></span><span class="spk-arc"></span></span><span class="voice-dur">'+formatDuration(dur)+'</span></div>';
     }else{
         contentHtml = escapeHtml(m.content||'');
     }
@@ -978,6 +1398,7 @@ function renderPrivateMsg(m){
 }
 
 function openGroupChat(gid,gname){
+    if(_voiceMode) switchToTextMode();
     chatGroup = {id:gid,name:gname};
     chatPeer = null;
     clearPoll();
@@ -1016,10 +1437,19 @@ function pollGroup(){
     fetch('/user/im/group/poll?_xsrf='+_xsrf+'&group_id='+chatGroup.id+'&last_id='+lastGroupMsgId+'&rendered_ids='+encodeURIComponent(ids)).then(r=>r.json()).then(d=>{
         if(!d.success)return;
         if(d.data.length){
+            var hasMsgFromOther = false;
             d.data.forEach(m=>{
                 renderGroupMsg(m);
                 lastGroupMsgId = Math.max(lastGroupMsgId,m.id);
+                if(m.from_user_id !== userId && !m.is_recalled) hasMsgFromOther = true;
+                if(m.msg_type === 'system'){
+                    try{
+                        var sd = JSON.parse(m.content||'{}');
+                        if(sd.action === 'invite') hasMsgFromOther = true;
+                    }catch(e){}
+                }
             });
+            if(hasMsgFromOther) playDing();
             var msgs = document.getElementById('chatMessages');
             msgs.scrollTop = msgs.scrollHeight;
         }
@@ -1076,12 +1506,12 @@ function renderGroupMsg(m){
     row.setAttribute('data-msg-id', m.id);
     row.setAttribute('data-create-at', m.create_at);
     row.setAttribute('data-from-user', m.from_user_id);
-    if(isMe){
-        row.addEventListener('contextmenu', function(e){
-            e.preventDefault();
-            showContextMenu(e, m.id, m.create_at);
-        });
-    }
+    if(m.msg_type === 'text') row.setAttribute('data-content', m.content||'');
+    row.setAttribute('data-msg-type', m.msg_type||'text');
+    row.addEventListener('contextmenu', function(e){
+        e.preventDefault();
+        showContextMenu(e, m.id, m.create_at);
+    });
     var senderHtml = (isMe||isEmp)?'':'<div class="msg-username">'+escapeHtml(m.from_username)+'</div>';
     if(isEmp)senderHtml = '<div class="msg-sender">@'+escapeHtml(m.at_employee)+'</div>';
     var contentHtml = '';
@@ -1089,6 +1519,11 @@ function renderGroupMsg(m){
         contentHtml = '<img class="msg-img" src="'+m.file_path+'" onclick="window.open(this.src)">';
     }else if(m.msg_type==='file'){
         contentHtml = '<a class="msg-file" href="'+m.file_path+'" target="_blank"><i class="fas fa-file"></i><span>'+escapeHtml(m.file_name||'文件')+' ('+formatSize(m.file_size)+')</span></a>';
+    }else if(m.msg_type==='voice'){
+        var dur = clampDuration(m.duration || 0);
+        var voiceCls = 'chat-voice-msg';
+        if(!isMe) voiceCls += ' unread';
+        contentHtml = '<div class="'+voiceCls+'" onclick="playVoiceMessage(\''+(m.file_path||'')+'\',\''+(m.content||'').replace(/'/g,"\\'")+'\',this)"><span class="voice-speaker"><span class="spk-cone"></span><span class="spk-base"></span><span class="spk-arc"></span><span class="spk-arc"></span></span><span class="voice-dur">'+formatDuration(dur)+'</span></div>';
     }else{
         contentHtml = escapeHtml(m.content||'');
     }
@@ -1152,12 +1587,16 @@ function updateReqBadge(){
     fetch('/user/im/friend-request/count?_xsrf='+_xsrf).then(r=>r.json()).then(d=>{
         var b = document.getElementById('reqBadge');
         if(!b)return;
-        if(d.count>0){
+        if(d.count > 0){
             b.textContent = d.count;
             b.style.display = 'inline-block';
         }else{
             b.style.display = 'none';
         }
+        if(_lastReqCount !== -1 && d.count > _lastReqCount){
+            playDing();
+        }
+        _lastReqCount = d.count;
     });
 }
 
@@ -1165,6 +1604,12 @@ function showContextMenu(e, msgId, createAt){
     contextMsgId = msgId;
     var menu = document.getElementById('contextMenu');
     var recallItem = document.getElementById('menuRecall');
+    var speakItem = document.getElementById('menuSpeak');
+    var row = document.querySelector('.msg-row[data-msg-id="'+msgId+'"]');
+    var isMe = row && parseInt(row.getAttribute('data-from-user')) === userId;
+    var msgType = row ? row.getAttribute('data-msg-type') : 'text';
+    recallItem.style.display = isMe ? '' : 'none';
+    speakItem.style.display = (msgType === 'text') ? '' : 'none';
     var msgTime = new Date(createAt.replace(' ','T') + 'Z').getTime();
     var diff = (Date.now() - msgTime) / 1000 / 60;
     if(diff > 2){
@@ -1176,7 +1621,7 @@ function showContextMenu(e, msgId, createAt){
     var left = e.pageX;
     var top = e.pageY;
     if(left + 130 > window.innerWidth)left = window.innerWidth - 140;
-    if(top + 50 > window.innerHeight)top = window.innerHeight - 60;
+    if(top + 100 > window.innerHeight)top = window.innerHeight - 110;
     menu.style.left = left + 'px';
     menu.style.top = top + 'px';
 }
@@ -1217,6 +1662,24 @@ function hideContextMenu(){
     contextMsgId = null;
 }
 
+function speakContextMsg(){
+    if(!contextMsgId)return;
+    var row = document.querySelector('.msg-row[data-msg-id="'+contextMsgId+'"]');
+    if(!row)return;
+    var content = row.getAttribute('data-content')||'';
+    if(!content){showToast('该消息无文字内容');return;}
+    hideContextMenu();
+    var bubble = row.querySelector('.msg-bubble');
+    if(bubble){
+        bubble.classList.add('speech-highlight');
+    }
+    speakText(content, 'msg-'+contextMsgId, function(){
+        if(bubble){
+            bubble.classList.remove('speech-highlight');
+        }
+    });
+}
+
 function escapeHtml(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function formatSize(bytes){if(!bytes)return '0B';var u=['B','KB','MB','GB'];var i=0;while(bytes>=1024&&i<3){bytes/=1024;i++}return bytes.toFixed(1)+u[i]}
 
@@ -1225,6 +1688,200 @@ renderSidebarList();
 setInterval(updateReqBadge, 3000);
 updateReqBadge();
 document.addEventListener('click', hideContextMenu);
+</script>
+
+<script src="{{ static_url('js/gesture.js') }}"></script>
+<script>
+(function() {
+    GestureSystem.setPageContext('im');
+
+    var gestureToggleBtn = document.createElement('button');
+    gestureToggleBtn.id = 'gestureToggleBtn';
+    gestureToggleBtn.innerHTML = '<i class="fas fa-hand-paper"></i>';
+    gestureToggleBtn.title = '开启手势交互';
+    gestureToggleBtn.style.cssText =
+        'position:fixed;bottom:96px;right:24px;z-index:99991;' +
+        'width:48px;height:48px;border-radius:14px;border:1px solid rgba(0,0,0,0.1);' +
+        'background:#fff;color:#999;font-size:20px;' +
+        'cursor:pointer;transition:all 0.3s;box-shadow:0 4px 12px rgba(0,0,0,0.1);' +
+        'display:flex;align-items:center;justify-content:center;';
+    gestureToggleBtn.onmouseenter = function() {
+        this.style.color = '#07c160';
+        this.style.borderColor = 'rgba(7,193,96,0.3)';
+    };
+    gestureToggleBtn.onmouseleave = function() {
+        if (!GestureSystem.isRunning()) {
+            this.style.color = '#999';
+            this.style.borderColor = 'rgba(0,0,0,0.1)';
+        }
+    };
+
+    gestureToggleBtn.onclick = function() {
+        if (GestureSystem.isRunning()) {
+            GestureSystem.stop();
+            this.style.color = '#999';
+            this.style.borderColor = 'rgba(0,0,0,0.1)';
+            this.innerHTML = '<i class="fas fa-hand-paper"></i>';
+            this.title = '开启手势交互';
+        } else {
+            GestureSystem.setPageContext('im');
+            GestureSystem.init();
+            this.style.color = '#07c160';
+            this.style.borderColor = 'rgba(7,193,96,0.3)';
+            this.innerHTML = '<i class="fas fa-hand-paper"></i>';
+            this.title = '关闭手势交互';
+        }
+    };
+    document.body.appendChild(gestureToggleBtn);
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.OPEN_PALM, function(ctx) {
+        if (ctx === 'im') {
+            showIMShortcutMenu();
+        }
+        console.log('[手势] 手掌张开 → 快捷菜单');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.INDEX_UP, function(ctx) {
+        if (ctx === 'im') {
+            window.location.href = '/user/chat';
+        }
+        console.log('[手势] 食指竖起 → 智能问数');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.INDEX_MIDDLE_UP, function(ctx) {
+        if (ctx === 'im') {
+            console.log('[手势] 食中指竖起 → 已在智能聊天页面');
+        }
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.OK, function(ctx) {
+        if (ctx === 'im' && typeof sendMessage === 'function') {
+            try { sendMessage(); } catch(e) {}
+        }
+        console.log('[手势] OK → 发送消息');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.FIST, function(ctx) {
+        if (ctx === 'im') {
+            var menu = document.getElementById('shortcut-menu-overlay');
+            var empDlg = document.getElementById('emp-quick-dialog');
+            if (menu) { menu.remove(); return; }
+            if (empDlg) { empDlg.remove(); return; }
+            window.location.href = '/user/home';
+        }
+        console.log('[手势] 握拳 → 关闭弹窗/返回');
+    });
+
+    GestureSystem.registerAction(GestureSystem.GESTURE_NAMES.PINKY_OUT, function(ctx) {
+        if (ctx === 'im') {
+            triggerDigitalEmployee();
+        }
+        console.log('[手势] 小指伸出 → 数字员工');
+    });
+
+    function triggerDigitalEmployee() {
+        if (typeof emps !== 'undefined' && emps && emps.length > 0) {
+            if (emps.length === 1) {
+                openEmpChat(emps[0].alias, emps[0].name);
+            } else {
+                showEmpQuickDialog();
+            }
+        } else {
+            if (typeof showToast === 'function') {
+                showToast('暂无可用的数字员工');
+            }
+        }
+    }
+
+    function showEmpQuickDialog() {
+        var existing = document.getElementById('emp-quick-dialog');
+        if (existing) { existing.remove(); return; }
+
+        var overlay = document.createElement('div');
+        overlay.id = 'emp-quick-dialog';
+        overlay.style.cssText =
+            'position:fixed;top:0;left:0;right:0;bottom:0;' +
+            'background:rgba(0,0,0,0.5);z-index:100000;' +
+            'display:flex;align-items:center;justify-content:center;';
+        overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+        var empItems = '';
+        if (typeof emps !== 'undefined') {
+            emps.forEach(function(e) {
+                empItems +=
+                    '<div class="contact-item" onclick="document.getElementById(\'emp-quick-dialog\').remove();openEmpChat(\'' +
+                    e.alias + '\',\'' + escapeHtml(e.name) + '\')" style="cursor:pointer">' +
+                    '<div class="contact-avatar bot"><i class="fas fa-robot"></i></div>' +
+                    '<div class="contact-info"><div class="contact-name">@' + escapeHtml(e.alias) +
+                    '<span class="emp-badge">员工</span></div>' +
+                    '<div class="contact-preview">' + escapeHtml(e.name) + '</div></div></div>';
+            });
+        }
+
+        overlay.innerHTML =
+            '<div style="background:#fff;border-radius:16px;width:340px;max-height:420px;' +
+            'overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.15);">' +
+                '<div style="padding:16px 20px;border-bottom:1px solid #f0f0f0;' +
+                'display:flex;align-items:center;justify-content:space-between;">' +
+                    '<h5 style="margin:0;font-size:16px;">🤙 数字员工快捷对话</h5>' +
+                    '<button onclick="document.getElementById(\'emp-quick-dialog\').remove()" ' +
+                    'style="background:none;border:none;font-size:18px;color:#999;cursor:pointer;">✕</button>' +
+                '</div>' +
+                '<div style="max-height:320px;overflow-y:auto;">' + empItems + '</div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+    }
+
+    function showIMShortcutMenu() {
+        var existing = document.getElementById('shortcut-menu-overlay');
+        if (existing) { existing.remove(); return; }
+
+        var overlay = document.createElement('div');
+        overlay.id = 'shortcut-menu-overlay';
+        overlay.style.cssText =
+            'position:fixed;top:0;left:0;right:0;bottom:0;' +
+            'background:rgba(0,0,0,0.5);z-index:100000;' +
+            'display:flex;align-items:center;justify-content:center;';
+        overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+        overlay.innerHTML =
+            '<div style="background:#fff;border-radius:16px;padding:28px;width:380px;' +
+            'box-shadow:0 8px 40px rgba(0,0,0,0.2);">' +
+                '<h4 style="margin:0 0 4px;font-size:18px;text-align:center;">⌨️ 快捷菜单</h4>' +
+                '<p style="color:#999;font-size:12px;text-align:center;margin-bottom:20px;">' +
+                    '🖐️ 手掌张开呼出 · ✊ 握拳关闭</p>' +
+                '<div style="display:flex;flex-direction:column;gap:8px;">' +
+                    '<div onclick="switchTab(\'private\');document.getElementById(\'shortcut-menu-overlay\').remove()" ' +
+                    'style="padding:12px 16px;background:#f8f8f8;border-radius:10px;cursor:pointer;' +
+                    'display:flex;align-items:center;gap:10px;font-size:14px;">' +
+                        '<span style="font-size:20px">💬</span>私聊</div>' +
+                    '<div onclick="switchTab(\'group\');document.getElementById(\'shortcut-menu-overlay\').remove()" ' +
+                    'style="padding:12px 16px;background:#f8f8f8;border-radius:10px;cursor:pointer;' +
+                    'display:flex;align-items:center;gap:10px;font-size:14px;">' +
+                        '<span style="font-size:20px">👥</span>群聊</div>' +
+                    '<div onclick="switchTab(\'employees\');document.getElementById(\'shortcut-menu-overlay\').remove()" ' +
+                    'style="padding:12px 16px;background:#f8f8f8;border-radius:10px;cursor:pointer;' +
+                    'display:flex;align-items:center;gap:10px;font-size:14px;">' +
+                        '<span style="font-size:20px">🤖</span>数字员工 <span style="margin-left:auto;color:#999;font-size:11px;">🤙 手势6</span></div>' +
+                    '<div onclick="window.location.href=\'/user/chat\'" ' +
+                    'style="padding:12px 16px;background:#f0f8ff;border-radius:10px;cursor:pointer;' +
+                    'display:flex;align-items:center;gap:10px;font-size:14px;">' +
+                        '<span style="font-size:20px">🔍</span>智能问数 <span style="margin-left:auto;color:#999;font-size:11px;">☝️ 手势1</span></div>' +
+                    '<div onclick="window.location.href=\'/user/home\'" ' +
+                    'style="padding:12px 16px;background:#fff5f5;border-radius:10px;cursor:pointer;' +
+                    'display:flex;align-items:center;gap:10px;font-size:14px;">' +
+                        '<span style="font-size:20px">🏠</span>返回首页 <span style="margin-left:auto;color:#999;font-size:11px;">✊ 握拳</span></div>' +
+                '</div>' +
+                '<div style="text-align:center;margin-top:14px;">' +
+                    '<button onclick="document.getElementById(\'shortcut-menu-overlay\').remove()" ' +
+                    'style="padding:6px 24px;border:none;background:#f0f0f0;border-radius:8px;' +
+                    'color:#999;font-size:12px;cursor:pointer;">关闭</button>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+    }
+
+})();
 </script>
 </body>
 </html>

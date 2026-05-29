@@ -274,6 +274,7 @@ class IMPrivateChatSSEHandler(UserBaseHandler):
         file_size = int(self.get_body_argument("file_size", "0"))
         file_path = self.get_body_argument("file_path", "").strip() or None
         emp_alias = self.get_body_argument("emp_alias", "").strip() or None
+        duration = int(self.get_body_argument("duration", "0"))
 
         if not peer_id and not emp_alias:
             self._sse_error("参数错误")
@@ -284,7 +285,7 @@ class IMPrivateChatSSEHandler(UserBaseHandler):
                 file_name = os.path.basename(file_path)
             content = file_path if msg_type == "image" else (message or "")
             msg_id = IMMessageRepository.send_private_employee(
-                user["id"], emp_alias, msg_type, content, file_name, file_size, file_path
+                user["id"], emp_alias, msg_type, content, file_name, file_size, file_path, duration
             )
             self.write("data: " + json.dumps({"type": "sent", "id": msg_id, "emp_alias": emp_alias}, ensure_ascii=False) + "\n\n")
             self.flush()
@@ -340,7 +341,7 @@ class IMPrivateChatSSEHandler(UserBaseHandler):
 
         content = file_path if msg_type == "image" else (message or "")
         msg_id = IMMessageRepository.send_private(
-            user["id"], peer_id, msg_type, content, file_name, file_size, file_path
+            user["id"], peer_id, msg_type, content, file_name, file_size, file_path, duration
         )
         self.write("data: " + json.dumps({"type": "sent", "id": msg_id}, ensure_ascii=False) + "\n\n")
         self.flush()
@@ -373,6 +374,7 @@ class IMPrivatePollHandler(UserBaseHandler):
                 "to_user_id": m["to_user_id"], "msg_type": m["msg_type"],
                 "content": m["content"], "file_name": m.get("file_name"),
                 "file_path": m.get("file_path"), "file_size": m.get("file_size", 0),
+                "duration": m.get("duration", 0),
                 "from_username": m.get("from_username") or emp_alias or "",
                 "is_recalled": m.get("is_recalled", 0),
                 "create_at": m["create_at"]
@@ -398,6 +400,7 @@ class IMGroupPollHandler(UserBaseHandler):
                 "from_user_id": m["from_user_id"], "msg_type": m["msg_type"],
                 "content": m["content"], "file_name": m.get("file_name"),
                 "file_path": m.get("file_path"), "file_size": m.get("file_size", 0),
+                "duration": m.get("duration", 0),
                 "from_username": m["from_username"], "at_employee": m.get("at_employee"),
                 "is_recalled": m.get("is_recalled", 0),
                 "create_at": m["create_at"]
@@ -418,6 +421,7 @@ class IMGroupChatSendHandler(UserBaseHandler):
         file_size = int(self.get_body_argument("file_size", "0"))
         file_path = self.get_body_argument("file_path", "").strip() or None
         at_employee = self.get_body_argument("at_employee", "").strip() or None
+        duration = int(self.get_body_argument("duration", "0"))
 
         if msg_type == "image" and file_path:
             file_name = os.path.basename(file_path)
@@ -429,7 +433,7 @@ class IMGroupChatSendHandler(UserBaseHandler):
 
         msg_id = IMMessageRepository.send_group(
             group_id, user["id"], msg_type,
-            content, file_name, file_size, file_path, at_employee
+            content, file_name, file_size, file_path, at_employee, duration
         )
 
         result = {"success": True, "message": "发送成功", "id": msg_id}

@@ -33,7 +33,8 @@ from app.controllers.model_engine import (
 )
 from app.controllers.watch_engine import (
     WatchCollectHandler, WatchSourceManageHandler, WatchExecuteHandler,
-    WatchDataHandler, WatchDataDeleteHandler, WatchDataBatchDeleteHandler
+    WatchDataHandler, WatchDataDeleteHandler, WatchDataBatchDeleteHandler,
+    WatchScheduleHandler
 )
 from app.controllers.api_interface_mgr import (
     ApiInterfaceHandler, ApiInterfaceCreateHandler,
@@ -166,6 +167,7 @@ def make_app():
         (r"/admin/watch/collect", WatchCollectHandler),
         (r"/admin/watch/sources", WatchSourceManageHandler),
         (r"/admin/watch/execute", WatchExecuteHandler),
+        (r"/admin/watch/schedule", WatchScheduleHandler),
         (r"/admin/watch/data", WatchDataHandler),
         (r"/admin/watch/data/delete", WatchDataDeleteHandler),
         (r"/admin/watch/data/batch_delete", WatchDataBatchDeleteHandler),
