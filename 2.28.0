@@ -1,0 +1,12 @@
+Looking in indexes: https://pypi.tuna.tsinghua.edu.cn/simple/
+Collecting requests
+  Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+Collecting charset_normalizer<4,>=2 (from requests)
+  Downloading charset_normalizer-3.4.7-cp312-cp312-win_amd64.whl (159 kB)
+Requirement already satisfied: idna<4,>=2.5 in .\venv\Lib\site-packages (from requests) (3.16)
+Collecting urllib3<3,>=1.26 (from requests)
+  Downloading urllib3-2.7.0-py3-none-any.whl (131 kB)
+Requirement already satisfied: certifi>=2023.5.7 in .\venv\Lib\site-packages (from requests) (2026.5.20)
+Installing collected packages: urllib3, charset_normalizer, requests
+
+Successfully installed charset_normalizer-3.4.7 requests-2.34.2 urllib3-2.7.0
